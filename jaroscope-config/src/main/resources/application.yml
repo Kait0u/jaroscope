@@ -1,0 +1,8 @@
+jaroscope:
+  target-release: 21
+  cache:
+    directory: "~/.jaroscope/cache"
+    max-age: 30d
+    max-size: 2GiB
+  security:
+    banned-roots: []

@@ -4,4 +4,4 @@ plugins {
 
 rootProject.name = "jaroscope"
 
-include("jaroscope-core", "jaroscope-decompiler", "jaroscope-mcp")
+include("jaroscope-core", "jaroscope-config", "jaroscope-decompiler", "jaroscope-mcp")

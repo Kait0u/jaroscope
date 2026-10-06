@@ -3,5 +3,6 @@ plugins {
 }
 
 dependencies {
+  implementation(project(":jaroscope-config"))
   api(project(":jaroscope-core"))
 }
