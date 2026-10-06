@@ -1,3 +1,5 @@
+import org.gradle.api.artifacts.VersionCatalogsExtension
+
 plugins {
   java
   id("com.diffplug.spotless")
@@ -7,10 +9,12 @@ repositories {
   mavenCentral()
 }
 
-dependencies {
-  testImplementation("org.junit.jupiter:junit-jupiter:6.0.1")
+val libraries = extensions.getByType<VersionCatalogsExtension>().named("libs")
 
-  testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+dependencies {
+  testImplementation(libraries.findLibrary("junit-jupiter").get())
+
+  testRuntimeOnly(libraries.findLibrary("junit-platform-launcher").get())
 }
 
 java {
