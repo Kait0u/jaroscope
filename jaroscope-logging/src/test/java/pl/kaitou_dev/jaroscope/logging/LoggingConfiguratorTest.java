@@ -1,28 +1,26 @@
 package pl.kaitou_dev.jaroscope.logging;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
-import java.util.logging.Logger;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.event.Level;
 
-/** Verifies that configured diagnostics are emitted to the supplied stderr stream. */
+/** Verifies that startup configuration is passed to Logback through system properties. */
 class LoggingConfiguratorTest {
-  /** Confirms that configuration writes logs to stderr and not stdout. */
+  /** Clears configuration properties after each isolated test. */
+  @AfterEach
+  void clearProperties() {
+    System.clearProperty(LoggingConfigurator.COLOR_PROPERTY);
+    System.clearProperty(LoggingConfigurator.LEVEL_PROPERTY);
+  }
+
+  /** Confirms that explicit level and color settings are published before logger startup. */
   @Test
-  void writesToConfiguredStderr() {
-    ByteArrayOutputStream stderrBytes = new ByteArrayOutputStream();
-    PrintStream stderr = new PrintStream(stderrBytes, true, StandardCharsets.UTF_8);
+  void publishesLoggingProperties() {
+    LoggingConfigurator.configure(new LoggingConfiguration(ColorMode.NEVER, Level.WARN));
 
-    LoggingConfigurator.configure(
-        new LoggingConfiguration(ColorMode.NEVER, java.util.logging.Level.INFO), stderr);
-    Logger.getLogger("jaroscope.test").info("stderr-only event");
-
-    String output = stderrBytes.toString(StandardCharsets.UTF_8);
-    assertTrue(output.contains("stderr-only event"));
-    assertFalse(output.contains("stdout-only event"));
+    assertEquals("WARN", System.getProperty(LoggingConfigurator.LEVEL_PROPERTY));
+    assertEquals("false", System.getProperty(LoggingConfigurator.COLOR_PROPERTY));
   }
 }

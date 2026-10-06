@@ -20,5 +20,8 @@ flowchart LR
     F[MCP protocol response] --> G[stdout]
 ```
 
-The logging module has no runtime logging dependency. Consumers call
-`LoggingConfigurator.configure(...)` during startup, then use JDK loggers.
+The logging module exposes SLF4J, uses Logback at runtime, and configures its
+ConsoleAppender to target stderr. Consumers call
+`LoggingConfigurator.configure(...)` before the first logger is created, then
+use SLF4J. Application classes should use Lombok's `@Slf4j` when they begin
+emitting logs.

@@ -1,0 +1,15 @@
+<configuration>
+  <conversionRule conversionWord="jaroscopeLevel"
+                  converterClass="pl.kaitou_dev.jaroscope.logging.LevelColorConverter"/>
+
+  <appender name="STDERR" class="ch.qos.logback.core.ConsoleAppender">
+    <target>System.err</target>
+    <encoder>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %jaroscopeLevel [%thread] %logger{36} - %msg%n%ex</pattern>
+    </encoder>
+  </appender>
+
+  <root level="${jaroscope.log.level:-INFO}">
+    <appender-ref ref="STDERR"/>
+  </root>
+</configuration>

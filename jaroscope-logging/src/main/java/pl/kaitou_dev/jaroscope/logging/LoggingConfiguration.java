@@ -1,7 +1,7 @@
 package pl.kaitou_dev.jaroscope.logging;
 
 import java.util.Objects;
-import java.util.logging.Level;
+import org.slf4j.event.Level;
 
 /** Immutable configuration for JARoscope's stderr logging. */
 public record LoggingConfiguration(ColorMode colorMode, Level minimumLevel) {
