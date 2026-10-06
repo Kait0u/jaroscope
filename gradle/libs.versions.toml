@@ -1,0 +1,5 @@
+[versions]
+testament = "0.1.1"
+
+[plugins]
+testament = { id = "pl.kaitou-dev.testament", version.ref = "testament" }
