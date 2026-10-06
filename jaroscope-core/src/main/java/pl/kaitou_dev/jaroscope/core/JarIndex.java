@@ -34,11 +34,11 @@ public final class JarIndex {
    * @param targetRelease the Java release whose class selection rules should apply
    * @return an immutable index mapping binary class names to entry names
    * @throws IOException if the JAR cannot be opened or read
-   * @throws IllegalArgumentException if the target release is not positive
+   * @throws JarIndexException if the target release is not positive
    */
   public static JarIndex open(Path path, int targetRelease) throws IOException {
     if (targetRelease < MINIMUM_TARGET_RELEASE) {
-      throw new IllegalArgumentException("targetRelease must be positive");
+      throw new JarIndexException("targetRelease must be positive");
     }
 
     Map<String, String> entries = new TreeMap<>();

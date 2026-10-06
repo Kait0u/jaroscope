@@ -121,7 +121,7 @@ public final class ConfigurationLoader {
     try (Reader reader = Files.newBufferedReader(path)) {
       JsonNode override = mapper.readTree(reader);
       if (override == null || !override.isObject()) {
-        throw new IllegalArgumentException("Configuration must contain a YAML object");
+        throw new InvalidConfigurationException("Configuration must contain a YAML object");
       }
       target.setAll((ObjectNode) deepMerge(target, override));
     }
@@ -176,10 +176,15 @@ public final class ConfigurationLoader {
   /** Parses the supported day-based cache age syntax. */
   private Duration parseDuration(String value) {
     if (!value.endsWith(DAYS_SUFFIX)) {
-      throw new IllegalArgumentException("Cache max-age must use a day suffix");
+      throw new InvalidConfigurationException("Cache max-age must use a day suffix");
     }
-    long days = Long.parseLong(value.substring(0, value.length() - DAYS_SUFFIX.length()));
-    return Duration.ofDays(days);
+    try {
+      long days = Long.parseLong(value.substring(0, value.length() - DAYS_SUFFIX.length()));
+      return Duration.ofDays(days);
+    } catch (NumberFormatException | ArithmeticException exception) {
+      throw new InvalidConfigurationException(
+          "Cache max-age must contain a valid day count", exception);
+    }
   }
 
   /** Parses the supported byte-size suffixes into a byte count. */
@@ -199,9 +204,14 @@ public final class ConfigurationLoader {
       multiplier = 1L;
       suffix = BYTES_SUFFIX;
     } else {
-      throw new IllegalArgumentException("Cache max-size must use a byte suffix");
+      throw new InvalidConfigurationException("Cache max-size must use a byte suffix");
     }
     String number = value.substring(0, value.length() - suffix.length());
-    return Math.multiplyExact(Long.parseLong(number), multiplier);
+    try {
+      return Math.multiplyExact(Long.parseLong(number), multiplier);
+    } catch (NumberFormatException | ArithmeticException exception) {
+      throw new InvalidConfigurationException(
+          "Cache max-size must contain a valid byte count", exception);
+    }
   }
 }

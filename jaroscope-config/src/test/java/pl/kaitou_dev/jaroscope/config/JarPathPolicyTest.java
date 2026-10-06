@@ -30,7 +30,7 @@ class JarPathPolicyTest {
     Path jar = Files.createFile(bannedRoot.resolve("library.jar"));
     JarPathPolicy policy = new JarPathPolicy(configuration(List.of(bannedRoot)));
 
-    assertThrows(SecurityException.class, () -> policy.validate(jar));
+    assertThrows(JarPathException.class, () -> policy.validate(jar));
   }
 
   /** Creates the minimum configuration needed by path policy tests. */

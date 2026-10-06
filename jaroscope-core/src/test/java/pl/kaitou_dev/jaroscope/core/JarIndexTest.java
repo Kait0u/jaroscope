@@ -40,6 +40,6 @@ class JarIndexTest {
   /** Checks that nonsensical Java release numbers fail before reading the archive. */
   @Test
   void rejectsInvalidTargetRelease() throws Exception {
-    assertThrows(IllegalArgumentException.class, () -> JarIndex.open(fixture(), 0));
+    assertThrows(JarIndexException.class, () -> JarIndex.open(fixture(), 0));
   }
 }

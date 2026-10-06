@@ -18,13 +18,13 @@ public record JaroscopeConfiguration(
     Objects.requireNonNull(cacheMaxAge, "cacheMaxAge");
     Objects.requireNonNull(bannedRoots, "bannedRoots");
     if (targetRelease < 1) {
-      throw new IllegalArgumentException("targetRelease must be positive");
+      throw new InvalidConfigurationException("targetRelease must be positive");
     }
     if (cacheMaxAge.isNegative() || cacheMaxAge.isZero()) {
-      throw new IllegalArgumentException("cacheMaxAge must be positive");
+      throw new InvalidConfigurationException("cacheMaxAge must be positive");
     }
     if (cacheMaxSizeBytes < 1) {
-      throw new IllegalArgumentException("cacheMaxSizeBytes must be positive");
+      throw new InvalidConfigurationException("cacheMaxSizeBytes must be positive");
     }
     bannedRoots = List.copyOf(bannedRoots);
   }

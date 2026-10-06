@@ -41,3 +41,6 @@ In the bundled fixture, `example.Greeter` maps to `example/Greeter.class`
 at release 11 and `META-INF/versions/17/example/Greeter.class` at release 21.
 Entries under `META-INF/versions/` are ignored unless the JAR declares
 `Multi-Release: true`.
+
+An invalid target release raises `JarIndexException`. Archive read failures
+remain `IOException`.

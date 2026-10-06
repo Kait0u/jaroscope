@@ -60,7 +60,7 @@ class ConfigurationLoaderTest {
     Files.writeString(explicitConfiguration, "jaroscope:\n  cache:\n    max-age: 30h\n");
 
     assertThrows(
-        IllegalArgumentException.class,
+        InvalidConfigurationException.class,
         () ->
             new ConfigurationLoader().load(temporaryDirectory, Optional.of(explicitConfiguration)));
   }

@@ -10,6 +10,9 @@ Later layers override matching values and preserve unrelated values. The
 configuration library validates release, cache, and security settings before
 returning a record used by the application.
 
+Invalid configuration raises `InvalidConfigurationException`. A rejected JAR
+path raises `JarPathException`. Filesystem failures remain `IOException`.
+
 ```mermaid
 sequenceDiagram
     participant App
