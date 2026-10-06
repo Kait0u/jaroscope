@@ -1,6 +1,6 @@
 <configuration>
   <conversionRule conversionWord="jaroscopeLevel"
-                  converterClass="pl.kaitou_dev.jaroscope.logging.LevelColorConverter"/>
+                  class="pl.kaitou_dev.jaroscope.logging.LevelColorConverter"/>
 
   <appender name="STDERR" class="ch.qos.logback.core.ConsoleAppender">
     <target>System.err</target>
