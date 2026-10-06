@@ -6,4 +6,5 @@ dependencies {
   implementation(project(":jaroscope-config"))
   implementation(project(":jaroscope-core"))
   implementation(project(":jaroscope-decompiler"))
+  implementation(project(":jaroscope-logging"))
 }

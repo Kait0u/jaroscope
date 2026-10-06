@@ -4,5 +4,6 @@ plugins {
 
 dependencies {
   implementation(project(":jaroscope-config"))
+  implementation(project(":jaroscope-logging"))
   api(project(":jaroscope-core"))
 }
