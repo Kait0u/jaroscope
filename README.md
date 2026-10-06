@@ -16,6 +16,7 @@ The index selects the highest available class version no greater than the
 requested Java release, provided the manifest declares `Multi-Release: true`.
 It does not load JAR classes. Future work includes interface extraction,
 decompilation, MCP tools, and a configurable cache under `~/.jaroscope/cache`.
+See [JAR indexing internals](docs/jar-index.md) for the current selection logic.
 
 ## Build and test
 

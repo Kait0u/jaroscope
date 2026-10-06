@@ -9,31 +9,42 @@ import java.util.Optional;
 import java.util.TreeMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-import java.util.jar.Manifest;
 
-/** An index of the classes visible at a given Java release in one JAR. */
+/**
+ * Maps binary class names to their archive entries as seen by a given Java release.
+ *
+ * <p>Indexing reads JAR metadata only: it neither loads classes nor decompiles bytecode. The
+ * returned index is immutable and does not retain an open archive handle.
+ */
 public final class JarIndex {
-  private static final String VERSION_PREFIX = "META-INF/versions/";
+  /** The lowest supported target release for inspecting an archive. */
+  private static final int MINIMUM_TARGET_RELEASE = 1;
 
   private final Map<String, String> entries;
 
+  /** Stores a completed class index without exposing its mutable construction map. */
   private JarIndex(Map<String, String> entries) {
     this.entries = Collections.unmodifiableMap(entries);
   }
 
-  /** Indexes a JAR without loading or executing any of its classes. */
+  /**
+   * Indexes the classes visible at the requested Java release without loading them.
+   *
+   * @param path the readable local JAR to inspect
+   * @param targetRelease the Java release whose class selection rules should apply
+   * @return an immutable index mapping binary class names to entry names
+   * @throws IOException if the JAR cannot be opened or read
+   * @throws IllegalArgumentException if the target release is not positive
+   */
   public static JarIndex open(Path path, int targetRelease) throws IOException {
-    if (targetRelease < 1) {
+    if (targetRelease < MINIMUM_TARGET_RELEASE) {
       throw new IllegalArgumentException("targetRelease must be positive");
     }
 
     Map<String, String> entries = new TreeMap<>();
     Map<String, Integer> versions = new TreeMap<>();
     try (JarFile jar = new JarFile(path.toFile(), false, JarFile.OPEN_READ)) {
-      Manifest manifest = jar.getManifest();
-      boolean multiRelease =
-          manifest != null
-              && Boolean.parseBoolean(manifest.getMainAttributes().getValue("Multi-Release"));
+      boolean multiRelease = jar.isMultiRelease();
       Enumeration<JarEntry> jarEntries = jar.entries();
       while (jarEntries.hasMoreElements()) {
         JarEntry entry = jarEntries.nextElement();
@@ -44,31 +55,36 @@ public final class JarIndex {
         String name = entry.getName();
         int version = 0;
         String classPath = name;
-        if (name.startsWith(VERSION_PREFIX)) {
+        if (name.startsWith(JarFormat.VERSIONED_ENTRY_PREFIX)) {
           if (!multiRelease) {
             continue;
           }
-          int slash = name.indexOf('/', VERSION_PREFIX.length());
+          int slash = name.indexOf('/', JarFormat.VERSIONED_ENTRY_PREFIX.length());
           if (slash < 0) {
             continue;
           }
           try {
-            version = Integer.parseInt(name.substring(VERSION_PREFIX.length(), slash));
+            version =
+                Integer.parseInt(name.substring(JarFormat.VERSIONED_ENTRY_PREFIX.length(), slash));
           } catch (NumberFormatException ignored) {
             continue;
           }
-          if (version < 9 || version > targetRelease) {
+          if (version < JarFormat.FIRST_MULTI_RELEASE_VERSION || version > targetRelease) {
             continue;
           }
           classPath = name.substring(slash + 1);
         }
-        if (!classPath.endsWith(".class") || classPath.length() <= ".class".length()) {
+        if (!classPath.endsWith(JarFormat.CLASS_FILE_SUFFIX)
+            || classPath.length() <= JarFormat.CLASS_FILE_SUFFIX.length()) {
           continue;
         }
 
         String className =
-            classPath.substring(0, classPath.length() - ".class".length()).replace('/', '.');
-        if (version >= versions.getOrDefault(className, -1)) {
+            classPath
+                .substring(0, classPath.length() - JarFormat.CLASS_FILE_SUFFIX.length())
+                .replace('/', '.');
+        Integer previousVersion = versions.get(className);
+        if (previousVersion == null || version >= previousVersion) {
           entries.put(className, name);
           versions.put(className, version);
         }
@@ -77,11 +93,21 @@ public final class JarIndex {
     return new JarIndex(entries);
   }
 
-  /** Binary class name to its selected archive entry, in name order. */
+  /**
+   * Returns binary class names and their selected archive entries in class-name order.
+   *
+   * @return an immutable map from binary class names to entry names
+   */
   public Map<String, String> classes() {
     return entries;
   }
 
+  /**
+   * Finds the selected archive entry for a binary class name.
+   *
+   * @param binaryName a binary class name such as {@code java.lang.String}
+   * @return the archive entry, or empty when the class is absent
+   */
   public Optional<String> entryFor(String binaryName) {
     return Optional.ofNullable(entries.get(binaryName));
   }

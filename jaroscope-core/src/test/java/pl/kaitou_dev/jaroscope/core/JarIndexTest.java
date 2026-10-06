@@ -9,11 +9,14 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
+/** Exercises class selection against a committed multi-release JAR fixture. */
 class JarIndexTest {
+  /** Locates the prebundled fixture rather than creating a synthetic archive during the test. */
   private static Path fixture() throws URISyntaxException {
     return Path.of(JarIndexTest.class.getResource("/fixtures/multi-release.jar").toURI());
   }
 
+  /** Checks that releases below the versioned entry see the JAR's base implementation. */
   @Test
   void selectsBaseClassForOlderReleases() throws Exception {
     JarIndex index = JarIndex.open(fixture(), 11);
@@ -23,6 +26,7 @@ class JarIndexTest {
     assertFalse(index.classes().containsKey("example.Missing"));
   }
 
+  /** Checks that a newer runtime sees the highest compatible versioned entry. */
   @Test
   void selectsHighestSupportedVersion() throws Exception {
     JarIndex index = JarIndex.open(fixture(), 21);
@@ -33,6 +37,7 @@ class JarIndexTest {
     assertEquals(2, index.classes().size());
   }
 
+  /** Checks that nonsensical Java release numbers fail before reading the archive. */
   @Test
   void rejectsInvalidTargetRelease() throws Exception {
     assertThrows(IllegalArgumentException.class, () -> JarIndex.open(fixture(), 0));
