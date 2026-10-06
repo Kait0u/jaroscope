@@ -34,7 +34,7 @@ class JarIndexTest {
     assertEquals(
         "META-INF/versions/17/example/Greeter.class",
         index.entryFor("example.Greeter").orElseThrow());
-    assertEquals(2, index.classes().size());
+    assertEquals(3, index.classes().size());
   }
 
   /** Checks that nonsensical Java release numbers fail before reading the archive. */

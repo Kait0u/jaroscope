@@ -7,7 +7,7 @@ Java 21 multi-project Gradle build and an independently testable JAR index.
 
 ## Modules
 
-- `jaroscope-core`: archive indexing and multi-release class selection.
+- `jaroscope-core`: archive indexing and bytecode-based class-interface extraction.
 - `jaroscope-config`: typed YAML configuration and JAR path policy.
 - `jaroscope-logging`: stderr-only compact logging for the stdio application.
 - `jaroscope-decompiler`: reserved for a decompiler adapter and cache.
@@ -19,6 +19,7 @@ requested Java release, provided the manifest declares `Multi-Release: true`.
 It does not load JAR classes. Future work includes interface extraction,
 decompilation, MCP tools, and a configurable cache under `~/.jaroscope/cache`.
 See [JAR indexing internals](docs/jar-index.md) for the current selection logic.
+See [class-interface extraction](docs/class-interface.md) for bytecode metadata extraction.
 See [configuration and path policy](docs/configuration.md) for configuration layering and access checks.
 See [logging](docs/logging.md) for the stderr format and stream boundary.
 
