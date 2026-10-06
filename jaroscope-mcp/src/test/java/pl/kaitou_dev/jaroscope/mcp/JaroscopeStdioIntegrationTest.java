@@ -1,5 +1,6 @@
 package pl.kaitou_dev.jaroscope.mcp;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.BufferedReader;
@@ -55,6 +56,8 @@ class JaroscopeStdioIntegrationTest {
 
       assertTrue(output.contains("JARoscope"));
       assertTrue(output.contains(McpToolConstants.LIST_CLASSES_TOOL));
+      assertFalse(output.contains("LoggerContext"));
+      assertFalse(output.contains("Found logback-core"));
     } finally {
       process.destroy();
       process.waitFor(5, TimeUnit.SECONDS);
