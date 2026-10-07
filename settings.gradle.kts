@@ -7,6 +7,7 @@ rootProject.name = "jaroscope"
 include(
     "jaroscope-core",
     "jaroscope-config",
+    "jaroscope-cache",
     "jaroscope-logging",
     "jaroscope-decompiler",
     "jaroscope-mcp",

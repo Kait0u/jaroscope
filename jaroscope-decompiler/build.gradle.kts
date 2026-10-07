@@ -3,6 +3,7 @@ plugins {
 }
 
 dependencies {
+  implementation(project(":jaroscope-cache"))
   implementation(libs.vineflower)
   implementation(project(":jaroscope-config"))
   implementation(project(":jaroscope-logging"))

@@ -19,6 +19,7 @@ configurable cache under `~/.jaroscope/cache`.
 See [JAR indexing internals](docs/jar-index.md) for the current selection logic.
 See [class-interface extraction](docs/class-interface.md) for bytecode metadata extraction.
 See [decompiler internals](docs/decompiler.md) for source extraction.
+See [cache internals](docs/cache.md) for cache identity and cleanup.
 See [configuration and path policy](docs/configuration.md) for configuration layering and access checks.
 See [logging](docs/logging.md) for the stderr format and stream boundary.
 See [application flow](docs/application.md) for startup and transport behavior.
