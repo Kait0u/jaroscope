@@ -43,6 +43,12 @@ public final class ConfigurationLoader {
   /** The YAML key for banned filesystem roots. */
   private static final String BANNED_ROOTS_KEY = "banned-roots";
 
+  /** The YAML key for response settings. */
+  private static final String RESPONSE_KEY = "response";
+
+  /** The YAML key for the maximum source response size. */
+  private static final String MAX_SOURCE_SIZE_KEY = "max-source-size";
+
   /** The supported suffix for day durations. */
   private static final String DAYS_SUFFIX = "d";
 
@@ -147,6 +153,8 @@ public final class ConfigurationLoader {
     Path cacheDirectory = expandUserHome(cache.path(CACHE_DIRECTORY_KEY).asText(), userHome);
     Duration cacheMaxAge = parseDuration(cache.path(CACHE_MAX_AGE_KEY).asText());
     long cacheMaxSizeBytes = parseBytes(cache.path(CACHE_MAX_SIZE_KEY).asText());
+    long maxSourceResponseBytes =
+        parseBytes(settings.path(RESPONSE_KEY).path(MAX_SOURCE_SIZE_KEY).asText());
     List<Path> bannedRoots = new ArrayList<>();
     Iterator<JsonNode> bannedRootNodes =
         settings.path(SECURITY_KEY).path(BANNED_ROOTS_KEY).elements();
@@ -159,7 +167,8 @@ public final class ConfigurationLoader {
         cacheDirectory,
         cacheMaxAge,
         cacheMaxSizeBytes,
-        bannedRoots);
+        bannedRoots,
+        maxSourceResponseBytes);
   }
 
   /** Expands the home-directory shorthand used by the YAML configuration. */

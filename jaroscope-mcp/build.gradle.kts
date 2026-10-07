@@ -4,6 +4,7 @@ plugins {
 
 dependencies {
   implementation(libs.mcp)
+  implementation(project(":jaroscope-cache"))
   implementation(project(":jaroscope-config"))
   implementation(project(":jaroscope-core"))
   implementation(project(":jaroscope-decompiler"))

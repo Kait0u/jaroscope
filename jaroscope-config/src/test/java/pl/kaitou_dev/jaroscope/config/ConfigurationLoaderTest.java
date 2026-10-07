@@ -32,6 +32,9 @@ class ConfigurationLoaderTest {
     assertEquals(17, configuration.targetRelease());
     assertEquals(
         ConfigurationConstants.DEFAULT_CACHE_MAX_SIZE_BYTES, configuration.cacheMaxSizeBytes());
+    assertEquals(
+        ConfigurationConstants.DEFAULT_MAX_SOURCE_RESPONSE_BYTES,
+        configuration.maxSourceResponseBytes());
   }
 
   /** Confirms that an explicit file overrides the home file while preserving other settings. */

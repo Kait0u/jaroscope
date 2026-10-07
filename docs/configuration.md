@@ -10,6 +10,9 @@ Later layers override matching values and preserve unrelated values. The
 configuration library validates release, cache, and security settings before
 returning a record used by the application.
 
+The default maximum source response is 1 MiB and is configured with
+`jaroscope.response.max-source-size`.
+
 Invalid configuration raises `InvalidConfigurationException`. A rejected JAR
 path raises `JarPathException`. Filesystem failures remain `IOException`.
 

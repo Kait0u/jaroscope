@@ -8,6 +8,9 @@ public final class McpToolConstants {
   /** The MCP tool name for class-interface extraction. */
   public static final String GET_CLASS_INTERFACE_TOOL = "get_class_interface";
 
+  /** The MCP tool name for source extraction. */
+  public static final String GET_CLASS_SOURCE_TOOL = "get_class_source";
+
   /** The required JAR path argument. */
   public static final String JAR_PATH_ARGUMENT = "jarPath";
 

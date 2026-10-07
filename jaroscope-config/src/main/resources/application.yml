@@ -6,3 +6,5 @@ jaroscope:
     max-size: 2GiB
   security:
     banned-roots: []
+  response:
+    max-source-size: 1MiB

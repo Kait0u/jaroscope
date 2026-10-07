@@ -38,11 +38,15 @@ public final class JaroscopeApplication {
         new StdioServerTransportProvider(McpJsonDefaults.getMapper());
     ListClassesTool listClassesTool = new ListClassesTool(configuration);
     GetClassInterfaceTool getClassInterfaceTool = new GetClassInterfaceTool(configuration);
+    GetClassSourceTool getClassSourceTool = new GetClassSourceTool(configuration);
     McpSyncServer server =
         McpServer.sync(transport)
             .serverInfo(SERVER_NAME, SERVER_VERSION)
             .capabilities(ServerCapabilities.builder().tools(true).build())
-            .tools(listClassesTool.specification(), getClassInterfaceTool.specification())
+            .tools(
+                listClassesTool.specification(),
+                getClassInterfaceTool.specification(),
+                getClassSourceTool.specification())
             .build();
     CountDownLatch shutdown = new CountDownLatch(1);
     Runtime.getRuntime()

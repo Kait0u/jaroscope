@@ -1,7 +1,8 @@
 # JARoscope
 
 JARoscope is a local stdio MCP server for exploring Java JARs from clients such
-as Claude Code and OpenCode. The server currently exposes `list_classes`.
+as Claude Code and OpenCode. The server currently exposes `list_classes`,
+`get_class_interface`, and `get_class_source`.
 
 ## Modules
 
@@ -24,6 +25,7 @@ See [logging](docs/logging.md) for the stderr format and stream boundary.
 See [application flow](docs/application.md) for startup and transport behavior.
 See [`list_classes`](docs/tools/list-classes.md) for the class discovery tool contract.
 See [`get_class_interface`](docs/tools/get-class-interface.md) for interface extraction.
+See [`get_class_source`](docs/tools/get-class-source.md) for cached source extraction.
 
 ## Build and test
 

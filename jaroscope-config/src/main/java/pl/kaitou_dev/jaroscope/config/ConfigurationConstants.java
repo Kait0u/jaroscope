@@ -14,6 +14,9 @@ public final class ConfigurationConstants {
   /** The default cache size limit in bytes. */
   public static final long DEFAULT_CACHE_MAX_SIZE_BYTES = 2L * 1024L * 1024L * 1024L;
 
+  /** The default maximum UTF-8 source size returned in one MCP response. */
+  public static final long DEFAULT_MAX_SOURCE_RESPONSE_BYTES = 1024L * 1024L;
+
   /** The relative directory used for the user's JARoscope configuration. */
   public static final String USER_CONFIGURATION_DIRECTORY = ".jaroscope";
 

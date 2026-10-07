@@ -57,6 +57,7 @@ class JaroscopeStdioIntegrationTest {
       assertTrue(output.contains("JARoscope"));
       assertTrue(output.contains(McpToolConstants.LIST_CLASSES_TOOL));
       assertTrue(output.contains(McpToolConstants.GET_CLASS_INTERFACE_TOOL));
+      assertTrue(output.contains(McpToolConstants.GET_CLASS_SOURCE_TOOL));
       assertFalse(output.contains("LoggerContext"));
       assertFalse(output.contains("Found logback-core"));
     } finally {
