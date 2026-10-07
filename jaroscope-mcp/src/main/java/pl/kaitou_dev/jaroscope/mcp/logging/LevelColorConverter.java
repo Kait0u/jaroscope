@@ -1,4 +1,4 @@
-package pl.kaitou_dev.jaroscope.logging;
+package pl.kaitou_dev.jaroscope.mcp.logging;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.pattern.ClassicConverter;

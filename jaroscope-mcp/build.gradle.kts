@@ -7,7 +7,8 @@ dependencies {
   implementation(project(":jaroscope-config"))
   implementation(project(":jaroscope-core"))
   implementation(project(":jaroscope-decompiler"))
-  implementation(project(":jaroscope-logging"))
+  implementation(libs.slf4j.api)
+  implementation(libs.logback.classic)
   compileOnly(libs.lombok)
   annotationProcessor(libs.lombok)
 }

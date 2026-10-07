@@ -1,7 +1,7 @@
 package pl.kaitou_dev.jaroscope.mcp;
 
-import pl.kaitou_dev.jaroscope.logging.LoggingConfiguration;
-import pl.kaitou_dev.jaroscope.logging.LoggingConfigurator;
+import pl.kaitou_dev.jaroscope.mcp.logging.LoggingConfiguration;
+import pl.kaitou_dev.jaroscope.mcp.logging.LoggingConfigurator;
 
 /** Configures logging before loading the application class and starts JARoscope. */
 public final class JaroscopeBootstrap {

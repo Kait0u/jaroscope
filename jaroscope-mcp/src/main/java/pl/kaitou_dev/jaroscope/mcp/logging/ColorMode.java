@@ -1,4 +1,4 @@
-package pl.kaitou_dev.jaroscope.logging;
+package pl.kaitou_dev.jaroscope.mcp.logging;
 
 /** Controls ANSI color selection for stderr log output. */
 public enum ColorMode {

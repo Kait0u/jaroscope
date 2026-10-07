@@ -1,7 +1,7 @@
 <configuration>
   <statusListener class="ch.qos.logback.core.status.OnErrorConsoleStatusListener"/>
   <conversionRule conversionWord="jaroscopeLevel"
-                  class="pl.kaitou_dev.jaroscope.logging.LevelColorConverter"/>
+                  class="pl.kaitou_dev.jaroscope.mcp.logging.LevelColorConverter"/>
 
   <appender name="STDERR" class="ch.qos.logback.core.ConsoleAppender">
     <target>System.err</target>

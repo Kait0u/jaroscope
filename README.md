@@ -7,9 +7,8 @@ as Claude Code and OpenCode. The server currently exposes `list_classes`.
 
 - `jaroscope-core`: archive indexing and bytecode-based class-interface extraction.
 - `jaroscope-config`: typed YAML configuration and JAR path policy.
-- `jaroscope-logging`: stderr-only compact logging for the stdio application.
+- `jaroscope-mcp`: owns the stdio transport and stderr logging configuration.
 - `jaroscope-decompiler`: Vineflower adapter; cache is not implemented yet.
-- `jaroscope-mcp`: stdio server and MCP tools.
 - `buildSrc`: shared Java toolchain, JUnit and Google Java Style via Spotless.
 
 The index selects the highest available class version no greater than the

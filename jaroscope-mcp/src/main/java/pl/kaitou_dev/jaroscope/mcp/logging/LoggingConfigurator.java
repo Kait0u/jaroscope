@@ -1,4 +1,4 @@
-package pl.kaitou_dev.jaroscope.logging;
+package pl.kaitou_dev.jaroscope.mcp.logging;
 
 import java.util.Objects;
 
