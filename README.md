@@ -21,7 +21,8 @@ See [class-interface extraction](docs/class-interface.md) for bytecode metadata 
 See [configuration and path policy](docs/configuration.md) for configuration layering and access checks.
 See [logging](docs/logging.md) for the stderr format and stream boundary.
 See [application flow](docs/application.md) for startup and transport behavior.
-See [`list_classes`](docs/tools/list-classes.md) for the first MCP tool contract.
+See [`list_classes`](docs/tools/list-classes.md) for the class discovery tool contract.
+See [`get_class_interface`](docs/tools/get-class-interface.md) for interface extraction.
 
 ## Build and test
 
