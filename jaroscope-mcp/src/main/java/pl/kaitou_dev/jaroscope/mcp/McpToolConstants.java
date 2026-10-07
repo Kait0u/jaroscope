@@ -11,6 +11,15 @@ public final class McpToolConstants {
   /** The MCP tool name for source extraction. */
   public static final String GET_CLASS_SOURCE_TOOL = "get_class_source";
 
+  /** The MCP tool name for cache status. */
+  public static final String CACHE_STATUS_TOOL = "cache_status";
+
+  /** The MCP tool name for cache cleanup. */
+  public static final String CLEAN_CACHE_TOOL = "clean_cache";
+
+  /** The cleanup argument that removes all owned entries. */
+  public static final String CLEAR_ALL_ARGUMENT = "clearAll";
+
   /** The required JAR path argument. */
   public static final String JAR_PATH_ARGUMENT = "jarPath";
 

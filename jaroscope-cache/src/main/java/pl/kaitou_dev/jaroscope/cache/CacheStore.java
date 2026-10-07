@@ -104,31 +104,83 @@ public final class CacheStore {
     cleanup();
   }
 
+  /**
+   * Returns current cache usage and cleanup eligibility.
+   *
+   * @return an immutable cache status snapshot
+   * @throws IOException if the cache directory cannot be read
+   */
+  public CacheStatus status() throws IOException {
+    List<Path> cacheEntries = entries();
+    Instant expiry = Instant.now().minus(configuration.cacheMaxAge());
+    List<Instant> modifiedTimes = cacheEntries.stream().map(this::lastModified).sorted().toList();
+    long totalBytes = cacheEntries.stream().mapToLong(this::size).sum();
+    int expiredCount =
+        (int) cacheEntries.stream().filter(entry -> lastModified(entry).isBefore(expiry)).count();
+    return new CacheStatus(
+        configuration.cacheDirectory(),
+        cacheEntries.size(),
+        totalBytes,
+        modifiedTimes.isEmpty() ? Optional.empty() : Optional.of(modifiedTimes.get(0)),
+        modifiedTimes.isEmpty()
+            ? Optional.empty()
+            : Optional.of(modifiedTimes.get(modifiedTimes.size() - 1)),
+        expiredCount,
+        Math.max(0L, totalBytes - configuration.cacheMaxSizeBytes()),
+        configuration.cacheMaxSizeBytes(),
+        configuration.cacheMaxAge());
+  }
+
   /** Removes expired entries and then oldest entries until the configured size limit is met. */
-  public void cleanup() throws IOException {
+  public CacheCleanupResult cleanup() throws IOException {
     if (!Files.isDirectory(configuration.cacheDirectory())) {
-      return;
+      return new CacheCleanupResult(0, 0L);
     }
     Instant expiry = Instant.now().minus(configuration.cacheMaxAge());
     List<Path> entries = entries();
+    int removedEntries = 0;
+    long removedBytes = 0L;
     for (Path entry : entries) {
       if (Files.getLastModifiedTime(entry).toInstant().isBefore(expiry)) {
-        Files.deleteIfExists(entry);
+        long entrySize = size(entry);
+        if (Files.deleteIfExists(entry)) {
+          ++removedEntries;
+          removedBytes += entrySize;
+        }
       }
     }
     List<Path> remaining = entries();
     long totalSize = remaining.stream().mapToLong(this::size).sum();
     if (totalSize <= configuration.cacheMaxSizeBytes()) {
-      return;
+      return new CacheCleanupResult(removedEntries, removedBytes);
     }
     remaining.sort(Comparator.comparing(this::lastModified));
     for (Path entry : remaining) {
       if (totalSize <= configuration.cacheMaxSizeBytes()) {
         break;
       }
-      totalSize -= size(entry);
-      Files.deleteIfExists(entry);
+      long entrySize = size(entry);
+      totalSize -= entrySize;
+      if (Files.deleteIfExists(entry)) {
+        ++removedEntries;
+        removedBytes += entrySize;
+      }
     }
+    return new CacheCleanupResult(removedEntries, removedBytes);
+  }
+
+  /** Removes every owned source entry without touching other files. */
+  public CacheCleanupResult clear() throws IOException {
+    int removedEntries = 0;
+    long removedBytes = 0L;
+    for (Path entry : entries()) {
+      long entrySize = size(entry);
+      if (Files.deleteIfExists(entry)) {
+        ++removedEntries;
+        removedBytes += entrySize;
+      }
+    }
+    return new CacheCleanupResult(removedEntries, removedBytes);
   }
 
   private CacheKey key(

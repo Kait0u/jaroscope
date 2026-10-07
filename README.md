@@ -26,6 +26,7 @@ See [application flow](docs/application.md) for startup and transport behavior.
 See [`list_classes`](docs/tools/list-classes.md) for the class discovery tool contract.
 See [`get_class_interface`](docs/tools/get-class-interface.md) for interface extraction.
 See [`get_class_source`](docs/tools/get-class-source.md) for cached source extraction.
+See [`cache_status`](docs/tools/cache-status.md) and [`clean_cache`](docs/tools/clean-cache.md) for cache administration.
 
 ## Build and test
 
