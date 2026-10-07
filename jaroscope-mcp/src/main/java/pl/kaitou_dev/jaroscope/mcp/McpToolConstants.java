@@ -11,6 +11,9 @@ public final class McpToolConstants {
   /** The MCP tool name for source extraction. */
   public static final String GET_CLASS_SOURCE_TOOL = "get_class_source";
 
+  /** The MCP tool name for explicit whole-JAR decompilation. */
+  public static final String DECOMPILE_JAR_TOOL = "decompile_jar";
+
   /** The MCP tool name for cache status. */
   public static final String CACHE_STATUS_TOOL = "cache_status";
 
@@ -19,6 +22,18 @@ public final class McpToolConstants {
 
   /** The cleanup argument that removes all owned entries. */
   public static final String CLEAR_ALL_ARGUMENT = "clearAll";
+
+  /** The optional class limit argument for bulk decompilation. */
+  public static final String MAX_CLASSES_ARGUMENT = "maxClasses";
+
+  /** Default class limit for one bulk request. */
+  public static final int DEFAULT_MAX_CLASSES = 10_000;
+
+  /** Absolute class limit for one bulk request. */
+  public static final int MAX_CLASSES_LIMIT = 100_000;
+
+  /** Maximum number of individual failures returned in a bulk response. */
+  public static final int MAX_FAILURE_DETAILS = 100;
 
   /** The required JAR path argument. */
   public static final String JAR_PATH_ARGUMENT = "jarPath";

@@ -41,6 +41,7 @@ public final class JaroscopeApplication {
     GetClassSourceTool getClassSourceTool = new GetClassSourceTool(configuration);
     CacheStatusTool cacheStatusTool = new CacheStatusTool(configuration);
     CleanCacheTool cleanCacheTool = new CleanCacheTool(configuration);
+    DecompileJarTool decompileJarTool = new DecompileJarTool(configuration);
     McpSyncServer server =
         McpServer.sync(transport)
             .serverInfo(SERVER_NAME, SERVER_VERSION)
@@ -50,7 +51,8 @@ public final class JaroscopeApplication {
                 getClassInterfaceTool.specification(),
                 getClassSourceTool.specification(),
                 cacheStatusTool.specification(),
-                cleanCacheTool.specification())
+                cleanCacheTool.specification(),
+                decompileJarTool.specification())
             .build();
     CountDownLatch shutdown = new CountDownLatch(1);
     Runtime.getRuntime()
