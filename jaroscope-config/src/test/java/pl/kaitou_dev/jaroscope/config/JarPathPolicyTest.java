@@ -33,6 +33,30 @@ class JarPathPolicyTest {
     assertThrows(JarPathException.class, () -> policy.validate(jar));
   }
 
+  /** Confirms that a configured banned-root symlink cannot be bypassed through its target. */
+  @Test
+  void rejectsJarUnderSymlinkedBannedRoot() throws Exception {
+    Path bannedTarget = Files.createDirectory(temporaryDirectory.resolve("restricted"));
+    Path bannedAlias = temporaryDirectory.resolve("restricted-alias");
+    Files.createSymbolicLink(bannedAlias, bannedTarget);
+    Path jar = Files.createFile(bannedTarget.resolve("library.jar"));
+    JarPathPolicy policy = new JarPathPolicy(configuration(List.of(bannedAlias)));
+
+    assertThrows(JarPathException.class, () -> policy.validate(jar));
+  }
+
+  /** Confirms that a symlinked JAR path is checked by its resolved target. */
+  @Test
+  void rejectsSymlinkToJarUnderBannedRoot() throws Exception {
+    Path bannedRoot = Files.createDirectory(temporaryDirectory.resolve("restricted"));
+    Path jar = Files.createFile(bannedRoot.resolve("library.jar"));
+    Path alias = temporaryDirectory.resolve("external.jar");
+    Files.createSymbolicLink(alias, jar);
+    JarPathPolicy policy = new JarPathPolicy(configuration(List.of(bannedRoot)));
+
+    assertThrows(JarPathException.class, () -> policy.validate(alias));
+  }
+
   /** Creates the minimum configuration needed by path policy tests. */
   private JaroscopeConfiguration configuration(List<Path> bannedRoots) {
     return new JaroscopeConfiguration(

@@ -3,9 +3,11 @@ package pl.kaitou_dev.jaroscope.config;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Objects;
 
-/** Validates local JAR paths against the configured banned roots. */
+/** Validates local JAR paths against the configured banned roots after resolving symlinks. */
 public final class JarPathPolicy {
   /** The required suffix for paths accepted as JAR files. */
   private static final String JAR_FILE_SUFFIX = ".jar";
@@ -32,10 +34,34 @@ public final class JarPathPolicy {
       throw new JarPathException("Path is not a regular JAR file: " + requestedPath);
     }
     for (Path bannedRoot : configuration.bannedRoots()) {
-      if (realPath.startsWith(bannedRoot)) {
+      Path realBannedRoot = resolveExistingAncestor(bannedRoot);
+      if (realPath.startsWith(realBannedRoot)) {
         throw new JarPathException("JAR path is under a banned root: " + requestedPath);
       }
     }
     return realPath;
+  }
+
+  /** Resolves symlinks in an existing ancestor while preserving a not-yet-existing suffix. */
+  private Path resolveExistingAncestor(Path path) throws IOException {
+    Path normalizedPath = path.toAbsolutePath().normalize();
+    Path existingAncestor = normalizedPath;
+    ArrayList<Path> missingSuffix = new ArrayList<>();
+    while (existingAncestor != null && !Files.exists(existingAncestor)) {
+      Path fileName = existingAncestor.getFileName();
+      if (fileName != null) {
+        missingSuffix.add(fileName);
+      }
+      existingAncestor = existingAncestor.getParent();
+    }
+    if (existingAncestor == null) {
+      return normalizedPath;
+    }
+    Path resolvedPath = existingAncestor.toRealPath();
+    Collections.reverse(missingSuffix);
+    for (Path suffixElement : missingSuffix) {
+      resolvedPath = resolvedPath.resolve(suffixElement);
+    }
+    return resolvedPath.normalize();
   }
 }

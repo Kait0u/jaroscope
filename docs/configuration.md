@@ -46,7 +46,9 @@ sequenceDiagram
 
 `JarPathPolicy` resolves a requested path to its real path before checking it.
 This prevents a symlink from bypassing a banned root. It accepts only regular
-files with a `.jar` suffix.
+files with a `.jar` suffix. Banned roots are also resolved through existing
+symlinked ancestors, including when the configured root's final path does not
+yet exist.
 
 ```mermaid
 flowchart TD
