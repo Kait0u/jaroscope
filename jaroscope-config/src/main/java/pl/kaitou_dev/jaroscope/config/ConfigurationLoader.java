@@ -61,6 +61,30 @@ public final class ConfigurationLoader {
   /** The YAML key limiting classes warmed for one JAR. */
   private static final String MAX_BACKGROUND_CLASSES_KEY = "max-classes";
 
+  /** The YAML key for archive resource limits. */
+  private static final String ARCHIVE_KEY = "archive";
+
+  /** The YAML key for maximum compressed archive size. */
+  private static final String MAX_ARCHIVE_SIZE_KEY = "max-size";
+
+  /** The YAML key for maximum central-directory entry count. */
+  private static final String MAX_ARCHIVE_ENTRIES_KEY = "max-entries";
+
+  /** The YAML key for maximum uncompressed class entry size. */
+  private static final String MAX_CLASS_SIZE_KEY = "max-class-size";
+
+  /** The YAML key for maximum total selected class bytes staged for the decompiler. */
+  private static final String MAX_EXPANDED_CLASS_SIZE_KEY = "max-expanded-class-size";
+
+  /** The YAML key for decompiler execution limits. */
+  private static final String DECOMPILER_KEY = "decompiler";
+
+  /** The YAML key for concurrent Vineflower runs. */
+  private static final String MAX_CONCURRENT_VINEFLOWER_RUNS_KEY = "max-concurrent-runs";
+
+  /** The YAML key for threads used by each Vineflower run. */
+  private static final String VINEFLOWER_THREADS_PER_RUN_KEY = "threads-per-run";
+
   /** The supported suffix for day durations. */
   private static final String DAYS_SUFFIX = "d";
 
@@ -168,6 +192,8 @@ public final class ConfigurationLoader {
     long maxSourceResponseBytes =
         parseBytes(settings.path(RESPONSE_KEY).path(MAX_SOURCE_SIZE_KEY).asText());
     JsonNode background = settings.path(BACKGROUND_DECOMPILATION_KEY);
+    JsonNode archive = settings.path(ARCHIVE_KEY);
+    JsonNode decompiler = settings.path(DECOMPILER_KEY);
     List<Path> bannedRoots = new ArrayList<>();
     Iterator<JsonNode> bannedRootNodes =
         settings.path(SECURITY_KEY).path(BANNED_ROOTS_KEY).elements();
@@ -187,7 +213,17 @@ public final class ConfigurationLoader {
             background.path(MAX_CONCURRENT_BACKGROUND_JARS_KEY).asInt(),
             MAX_CONCURRENT_BACKGROUND_JARS_KEY),
         positiveInteger(
-            background.path(MAX_BACKGROUND_CLASSES_KEY).asInt(), MAX_BACKGROUND_CLASSES_KEY));
+            background.path(MAX_BACKGROUND_CLASSES_KEY).asInt(), MAX_BACKGROUND_CLASSES_KEY),
+        parseBytes(archive.path(MAX_ARCHIVE_SIZE_KEY).asText()),
+        positiveInteger(archive.path(MAX_ARCHIVE_ENTRIES_KEY).asInt(), MAX_ARCHIVE_ENTRIES_KEY),
+        parseBytes(archive.path(MAX_CLASS_SIZE_KEY).asText()),
+        parseBytes(archive.path(MAX_EXPANDED_CLASS_SIZE_KEY).asText()),
+        positiveInteger(
+            decompiler.path(MAX_CONCURRENT_VINEFLOWER_RUNS_KEY).asInt(),
+            MAX_CONCURRENT_VINEFLOWER_RUNS_KEY),
+        positiveInteger(
+            decompiler.path(VINEFLOWER_THREADS_PER_RUN_KEY).asInt(),
+            VINEFLOWER_THREADS_PER_RUN_KEY));
   }
 
   /** Rejects a non-positive integer configuration value. */

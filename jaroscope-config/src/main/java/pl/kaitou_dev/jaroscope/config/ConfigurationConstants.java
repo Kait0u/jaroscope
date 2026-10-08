@@ -1,5 +1,7 @@
 package pl.kaitou_dev.jaroscope.config;
 
+import pl.kaitou_dev.jaroscope.core.JarFormat;
+
 /** Configuration keys and default values shared by configuration components. */
 public final class ConfigurationConstants {
   /** The top-level YAML key for JARoscope settings. */
@@ -22,6 +24,25 @@ public final class ConfigurationConstants {
 
   /** The default maximum number of classes warmed per background JAR job. */
   public static final int DEFAULT_MAX_BACKGROUND_CLASSES = 10_000;
+
+  /** Default maximum compressed JAR size. */
+  public static final long DEFAULT_MAX_ARCHIVE_BYTES = JarFormat.DEFAULT_MAX_ARCHIVE_BYTES;
+
+  /** Default maximum number of archive entries. */
+  public static final int DEFAULT_MAX_ARCHIVE_ENTRIES = JarFormat.DEFAULT_MAX_ARCHIVE_ENTRIES;
+
+  /** Default maximum uncompressed class entry size. */
+  public static final long DEFAULT_MAX_CLASS_FILE_BYTES = JarFormat.DEFAULT_MAX_CLASS_FILE_BYTES;
+
+  /** Default maximum aggregate class bytes staged for Vineflower. */
+  public static final long DEFAULT_MAX_EXPANDED_CLASS_BYTES =
+      JarFormat.DEFAULT_MAX_EXPANDED_CLASS_BYTES;
+
+  /** Default maximum number of simultaneous Vineflower runs. */
+  public static final int DEFAULT_MAX_CONCURRENT_VINEFLOWER_RUNS = 2;
+
+  /** Default number of Vineflower worker threads per run. */
+  public static final int DEFAULT_VINEFLOWER_THREADS_PER_RUN = 2;
 
   /** The relative directory used for the user's JARoscope configuration. */
   public static final String USER_CONFIGURATION_DIRECTORY = ".jaroscope";

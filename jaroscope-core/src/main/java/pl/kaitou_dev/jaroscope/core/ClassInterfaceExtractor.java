@@ -1,5 +1,6 @@
 package pl.kaitou_dev.jaroscope.core;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
@@ -39,13 +40,25 @@ public final class ClassInterfaceExtractor {
    */
   public ClassInterface extract(Path jarPath, String binaryName, int targetRelease)
       throws IOException {
+    return extract(jarPath, binaryName, targetRelease, ArchiveLimits.defaults());
+  }
+
+  /** Extracts a declared class interface under configured class-file limits. */
+  public ClassInterface extract(
+      Path jarPath, String binaryName, int targetRelease, ArchiveLimits limits) throws IOException {
     Objects.requireNonNull(jarPath, "jarPath");
     Objects.requireNonNull(binaryName, "binaryName");
-    return extract(jarPath, binaryName, JarIndex.open(jarPath, targetRelease));
+    Objects.requireNonNull(limits, "limits");
+    return extract(
+        jarPath,
+        binaryName,
+        JarIndex.open(jarPath, targetRelease, limits),
+        limits.maxClassFileBytes());
   }
 
   /** Extracts a selected class using a prebuilt index shared by hierarchy traversal. */
-  ClassInterface extract(Path jarPath, String binaryName, JarIndex index) throws IOException {
+  ClassInterface extract(Path jarPath, String binaryName, JarIndex index, long maxClassFileBytes)
+      throws IOException {
     String entryName =
         index
             .entryFor(binaryName)
@@ -54,13 +67,32 @@ public final class ClassInterfaceExtractor {
       try (InputStream classBytes = jar.getInputStream(jar.getJarEntry(entryName))) {
         InterfaceVisitor visitor = new InterfaceVisitor(binaryName);
         try {
-          new ClassReader(classBytes).accept(visitor, SKIP_CLASS_CONTENT);
+          byte[] bytecode = readBoundedClass(classBytes, maxClassFileBytes, binaryName);
+          new ClassReader(bytecode).accept(visitor, SKIP_CLASS_CONTENT);
         } catch (IllegalArgumentException exception) {
           throw new ClassInterfaceException("Malformed class: " + binaryName, exception);
         }
         return visitor.result();
       }
     }
+  }
+
+  private byte[] readBoundedClass(InputStream classBytes, long maxClassFileBytes, String binaryName)
+      throws IOException {
+    int readLimit = Math.toIntExact(maxClassFileBytes + 1L);
+    ByteArrayOutputStream bytecode = new ByteArrayOutputStream();
+    byte[] buffer = new byte[Math.min(readLimit, 8192)];
+    long totalRead = 0L;
+    int bytesRead;
+    while ((bytesRead = classBytes.read(buffer)) >= 0) {
+      totalRead += bytesRead;
+      if (totalRead > maxClassFileBytes) {
+        throw new JarIndexException(
+            "Class entry exceeds the configured class-size limit: " + binaryName);
+      }
+      bytecode.write(buffer, 0, bytesRead);
+    }
+    return bytecode.toByteArray();
   }
 
   /**
@@ -78,11 +110,23 @@ public final class ClassInterfaceExtractor {
   public ClassInterfaceResult extractWithInheritance(
       Path jarPath, String binaryName, int targetRelease, boolean includeInheritedMembers)
       throws IOException {
-    ClassInterface declared = extract(jarPath, binaryName, targetRelease);
+    return extractWithInheritance(
+        jarPath, binaryName, targetRelease, includeInheritedMembers, ArchiveLimits.defaults());
+  }
+
+  /** Resolves parent members using the supplied archive resource limits. */
+  public ClassInterfaceResult extractWithInheritance(
+      Path jarPath,
+      String binaryName,
+      int targetRelease,
+      boolean includeInheritedMembers,
+      ArchiveLimits limits)
+      throws IOException {
+    ClassInterface declared = extract(jarPath, binaryName, targetRelease, limits);
     if (!includeInheritedMembers) {
       return new ClassInterfaceResult(declared, List.of());
     }
-    return inheritanceResolver.resolve(jarPath, declared, targetRelease);
+    return inheritanceResolver.resolve(jarPath, declared, targetRelease, limits);
   }
 
   private static MemberVisibility visibility(int access) {

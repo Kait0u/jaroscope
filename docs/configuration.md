@@ -17,6 +17,15 @@ Background cache warming is enabled by default. Configure it with
 `jaroscope.background-decompilation.enabled`, `max-concurrent-jars`, and
 `max-classes`.
 
+Archive ingestion defaults are 1 GiB maximum JAR size, 100,000 entries, and
+64 MiB per class entry. Vineflower staging is capped at 2 GiB of expanded
+class bytes. Configure these under `jaroscope.archive`. Vineflower defaults to
+two simultaneous runs with two worker threads per run, configurable under
+`jaroscope.decompiler`.
+The background coordinator reserves one run permit for foreground source
+requests. With defaults, one JAR warm-up runs at a time while a foreground
+request can still start another Vineflower run.
+
 Invalid configuration raises `InvalidConfigurationException`. A rejected JAR
 path raises `JarPathException`. Filesystem failures remain `IOException`.
 

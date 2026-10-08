@@ -24,9 +24,10 @@ final class ClassInheritanceResolver {
   }
 
   /** Resolves available ancestors while retaining declared members as the highest priority. */
-  ClassInterfaceResult resolve(Path jarPath, ClassInterface declared, int targetRelease)
+  ClassInterfaceResult resolve(
+      Path jarPath, ClassInterface declared, int targetRelease, ArchiveLimits limits)
       throws IOException {
-    JarIndex index = JarIndex.open(jarPath, targetRelease);
+    JarIndex index = JarIndex.open(jarPath, targetRelease, limits);
     Map<String, FieldInterface> fields = new LinkedHashMap<>();
     Map<MethodKey, MethodInterface> methods = new LinkedHashMap<>();
     Map<String, AnnotationInfo> annotations = new LinkedHashMap<>();
@@ -41,6 +42,7 @@ final class ClassInheritanceResolver {
           index,
           declared.superClassName(),
           true,
+          limits.maxClassFileBytes(),
           visited,
           warnings,
           fields,
@@ -49,7 +51,16 @@ final class ClassInheritanceResolver {
     }
     for (String interfaceName : declared.interfaceNames()) {
       collect(
-          jarPath, index, interfaceName, false, visited, warnings, fields, methods, annotations);
+          jarPath,
+          index,
+          interfaceName,
+          false,
+          limits.maxClassFileBytes(),
+          visited,
+          warnings,
+          fields,
+          methods,
+          annotations);
     }
 
     ClassInterface resolved =
@@ -71,6 +82,7 @@ final class ClassInheritanceResolver {
       JarIndex index,
       String parentName,
       boolean superclassChain,
+      long maxClassFileBytes,
       Set<String> visited,
       Set<String> warnings,
       Map<String, FieldInterface> fields,
@@ -82,7 +94,7 @@ final class ClassInheritanceResolver {
     }
     ClassInterface parent;
     try {
-      parent = extractor.extract(jarPath, parentName, index);
+      parent = extractor.extract(jarPath, parentName, index, maxClassFileBytes);
     } catch (ClassInterfaceException exception) {
       warnings.add("Could not resolve parent type " + parentName + " from the inspected JAR.");
       return;
@@ -90,7 +102,7 @@ final class ClassInheritanceResolver {
 
     addInheritedMembers(parent, fields, methods);
     if (superclassChain && parent.kind() != ClassKind.INTERFACE) {
-      addInheritedAnnotations(jarPath, index, parent, annotations, warnings);
+      addInheritedAnnotations(jarPath, index, parent, maxClassFileBytes, annotations, warnings);
     }
 
     if (parent.superClassName() != null) {
@@ -99,6 +111,7 @@ final class ClassInheritanceResolver {
           index,
           parent.superClassName(),
           superclassChain && parent.kind() != ClassKind.INTERFACE,
+          maxClassFileBytes,
           visited,
           warnings,
           fields,
@@ -107,7 +120,16 @@ final class ClassInheritanceResolver {
     }
     for (String interfaceName : parent.interfaceNames()) {
       collect(
-          jarPath, index, interfaceName, false, visited, warnings, fields, methods, annotations);
+          jarPath,
+          index,
+          interfaceName,
+          false,
+          maxClassFileBytes,
+          visited,
+          warnings,
+          fields,
+          methods,
+          annotations);
     }
   }
 
@@ -148,6 +170,7 @@ final class ClassInheritanceResolver {
       Path jarPath,
       JarIndex index,
       ClassInterface parent,
+      long maxClassFileBytes,
       Map<String, AnnotationInfo> annotations,
       Set<String> warnings) {
     for (AnnotationInfo annotation : parent.annotations()) {
@@ -155,7 +178,8 @@ final class ClassInheritanceResolver {
         continue;
       }
       try {
-        ClassInterface annotationType = extractor.extract(jarPath, annotation.typeName(), index);
+        ClassInterface annotationType =
+            extractor.extract(jarPath, annotation.typeName(), index, maxClassFileBytes);
         boolean inheritable =
             annotationType.annotations().stream()
                 .anyMatch(meta -> INHERITED_ANNOTATION_NAME.equals(meta.typeName()));

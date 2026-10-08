@@ -1,6 +1,7 @@
 package pl.kaitou_dev.jaroscope.decompiler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URISyntaxException;
@@ -9,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
+import pl.kaitou_dev.jaroscope.core.ArchiveLimits;
 
 /** Verifies source extraction through Vineflower using the bundled JAR fixture. */
 class VineflowerDecompilerTest {
@@ -51,5 +53,16 @@ class VineflowerDecompilerTest {
 
     assertTrue(olderRelease.source().contains("return \"base\""));
     assertTrue(newerRelease.source().contains("return \"java17\""));
+  }
+
+  /** Confirms that release-view staging rejects an aggregate expansion over budget. */
+  @Test
+  void rejectsExpandedClassDataOverConfiguredBudget() throws Exception {
+    ArchiveLimits limits = new ArchiveLimits(1024L * 1024L, 100, 1024L, 1024L);
+    VineflowerDecompiler decompiler =
+        new VineflowerDecompiler(limits, 1, new java.util.concurrent.Semaphore(1));
+
+    assertThrows(
+        DecompilerException.class, () -> decompiler.decompile(fixture(), "example.Greeter", 21));
   }
 }

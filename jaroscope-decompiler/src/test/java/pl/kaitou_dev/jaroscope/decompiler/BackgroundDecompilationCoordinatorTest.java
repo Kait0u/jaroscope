@@ -11,6 +11,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import pl.kaitou_dev.jaroscope.cache.CacheStore;
 import pl.kaitou_dev.jaroscope.config.JaroscopeConfiguration;
 
 /** Verifies scheduling limits and duplicate job coalescing. */
@@ -53,7 +54,9 @@ class BackgroundDecompilationCoordinatorTest {
             1,
             1);
     BackgroundDecompilationCoordinator coordinator =
-        new BackgroundDecompilationCoordinator(configuration, blockingDecompiler);
+        new BackgroundDecompilationCoordinator(
+            configuration,
+            new CachingDecompiler(blockingDecompiler, new CacheStore(configuration)));
     try {
       Path jar = fixture();
       assertTrue(coordinator.schedule(jar, 21));

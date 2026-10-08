@@ -3,5 +3,6 @@ plugins {
 }
 
 dependencies {
+  api(project(":jaroscope-core"))
   implementation(libs.jackson.yaml)
 }

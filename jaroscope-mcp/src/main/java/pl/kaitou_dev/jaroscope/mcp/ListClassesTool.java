@@ -77,7 +77,7 @@ public final class ListClassesTool {
               arguments,
               McpToolConstants.MAX_RESULTS_ARGUMENT,
               McpToolConstants.DEFAULT_MAX_RESULTS);
-      JarIndex index = JarIndex.open(jarPath, targetRelease);
+      JarIndex index = JarIndex.open(jarPath, targetRelease, configuration.archiveLimits());
       List<String> matchingClasses =
           index.classes().keySet().stream()
               .filter(className -> className.startsWith(packagePrefix))

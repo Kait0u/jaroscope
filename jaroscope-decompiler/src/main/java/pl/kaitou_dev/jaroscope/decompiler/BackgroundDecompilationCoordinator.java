@@ -5,9 +5,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -35,23 +37,41 @@ public final class BackgroundDecompilationCoordinator implements AutoCloseable {
 
   /** Creates the configured bounded background worker pool. */
   public BackgroundDecompilationCoordinator(JaroscopeConfiguration configuration) {
-    this(configuration, new VineflowerDecompiler());
+    this(
+        configuration,
+        new CachingDecompiler(
+            new VineflowerDecompiler(
+                configuration.archiveLimits(),
+                configuration.vineflowerThreadsPerRun(),
+                new Semaphore(configuration.maxConcurrentVineflowerRuns(), true)),
+            new CacheStore(configuration)));
   }
 
-  /** Creates a worker pool using an injected decompiler implementation. */
+  /** Creates a worker pool that shares the application decompiler and cache. */
   public BackgroundDecompilationCoordinator(
-      JaroscopeConfiguration configuration, Decompiler engine) {
+      JaroscopeConfiguration configuration, CachingDecompiler decompiler) {
     this.configuration = configuration;
-    decompiler = new CachingDecompiler(engine, new CacheStore(configuration));
+    this.decompiler = Objects.requireNonNull(decompiler, "decompiler");
     executor =
         new ThreadPoolExecutor(
-            configuration.maxConcurrentBackgroundJars(),
-            configuration.maxConcurrentBackgroundJars(),
+            backgroundWorkerCount(configuration),
+            backgroundWorkerCount(configuration),
             0L,
             TimeUnit.MILLISECONDS,
             new ArrayBlockingQueue<>(MAX_QUEUED_JOBS),
             new BackgroundThreadFactory(),
             new ThreadPoolExecutor.AbortPolicy());
+  }
+
+  /** Reserves one global Vineflower permit for responsive foreground source requests. */
+  private static int backgroundWorkerCount(JaroscopeConfiguration configuration) {
+    if (!configuration.backgroundDecompilationEnabled()) {
+      return 1;
+    }
+    int foregroundReservation = 1;
+    return Math.min(
+        configuration.maxConcurrentBackgroundJars(),
+        configuration.maxConcurrentVineflowerRuns() - foregroundReservation);
   }
 
   /**

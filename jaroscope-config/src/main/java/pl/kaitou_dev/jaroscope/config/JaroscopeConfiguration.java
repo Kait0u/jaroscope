@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
+import pl.kaitou_dev.jaroscope.core.ArchiveLimits;
 
 /** Validated runtime configuration for JARoscope. */
 public record JaroscopeConfiguration(
@@ -15,7 +16,13 @@ public record JaroscopeConfiguration(
     long maxSourceResponseBytes,
     boolean backgroundDecompilationEnabled,
     int maxConcurrentBackgroundJars,
-    int maxBackgroundClasses) {
+    int maxBackgroundClasses,
+    long maxArchiveBytes,
+    int maxArchiveEntries,
+    long maxClassFileBytes,
+    long maxExpandedClassBytes,
+    int maxConcurrentVineflowerRuns,
+    int vineflowerThreadsPerRun) {
   /** Creates a validated immutable configuration with defensive collection copying. */
   public JaroscopeConfiguration {
     Objects.requireNonNull(cacheDirectory, "cacheDirectory");
@@ -39,7 +46,26 @@ public record JaroscopeConfiguration(
     if (maxBackgroundClasses < 1) {
       throw new InvalidConfigurationException("maxBackgroundClasses must be positive");
     }
+    if (maxArchiveBytes < 1L || maxArchiveEntries < 1 || maxClassFileBytes < 1L) {
+      throw new InvalidConfigurationException("Archive resource limits must be positive");
+    }
+    if (maxClassFileBytes >= Integer.MAX_VALUE || maxExpandedClassBytes < maxClassFileBytes) {
+      throw new InvalidConfigurationException("Class resource limits are inconsistent");
+    }
+    if (maxConcurrentVineflowerRuns < 1 || vineflowerThreadsPerRun < 1) {
+      throw new InvalidConfigurationException("Vineflower concurrency limits must be positive");
+    }
+    if (backgroundDecompilationEnabled && maxConcurrentVineflowerRuns < 2) {
+      throw new InvalidConfigurationException(
+          "At least two Vineflower runs are required when background decompilation is enabled");
+    }
     bannedRoots = List.copyOf(bannedRoots);
+  }
+
+  /** Returns the archive limits consumed by indexing and class extraction. */
+  public ArchiveLimits archiveLimits() {
+    return new ArchiveLimits(
+        maxArchiveBytes, maxArchiveEntries, maxClassFileBytes, maxExpandedClassBytes);
   }
 
   /** Creates configuration with the default source-response size limit. */
@@ -79,5 +105,34 @@ public record JaroscopeConfiguration(
         true,
         ConfigurationConstants.DEFAULT_MAX_BACKGROUND_JARS,
         ConfigurationConstants.DEFAULT_MAX_BACKGROUND_CLASSES);
+  }
+
+  /** Creates configuration with the default archive and decompiler resource limits. */
+  public JaroscopeConfiguration(
+      int targetRelease,
+      Path cacheDirectory,
+      Duration cacheMaxAge,
+      long cacheMaxSizeBytes,
+      List<Path> bannedRoots,
+      long maxSourceResponseBytes,
+      boolean backgroundDecompilationEnabled,
+      int maxConcurrentBackgroundJars,
+      int maxBackgroundClasses) {
+    this(
+        targetRelease,
+        cacheDirectory,
+        cacheMaxAge,
+        cacheMaxSizeBytes,
+        bannedRoots,
+        maxSourceResponseBytes,
+        backgroundDecompilationEnabled,
+        maxConcurrentBackgroundJars,
+        maxBackgroundClasses,
+        ConfigurationConstants.DEFAULT_MAX_ARCHIVE_BYTES,
+        ConfigurationConstants.DEFAULT_MAX_ARCHIVE_ENTRIES,
+        ConfigurationConstants.DEFAULT_MAX_CLASS_FILE_BYTES,
+        ConfigurationConstants.DEFAULT_MAX_EXPANDED_CLASS_BYTES,
+        ConfigurationConstants.DEFAULT_MAX_CONCURRENT_VINEFLOWER_RUNS,
+        ConfigurationConstants.DEFAULT_VINEFLOWER_THREADS_PER_RUN);
   }
 }

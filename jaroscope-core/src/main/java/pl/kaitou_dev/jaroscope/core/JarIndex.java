@@ -1,10 +1,12 @@
 package pl.kaitou_dev.jaroscope.core;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.jar.JarEntry;
@@ -37,8 +39,28 @@ public final class JarIndex {
    * @throws JarIndexException if the target release is not positive
    */
   public static JarIndex open(Path path, int targetRelease) throws IOException {
+    return open(path, targetRelease, ArchiveLimits.defaults());
+  }
+
+  /**
+   * Indexes classes using explicit archive resource limits.
+   *
+   * @param path the readable local JAR to inspect
+   * @param targetRelease the Java release whose class selection rules should apply
+   * @param limits compressed-size, entry-count, and class-size limits
+   * @return an immutable index mapping binary class names to entry names
+   * @throws IOException if the JAR cannot be opened or read
+   * @throws JarIndexException if the release or archive limits are violated
+   */
+  public static JarIndex open(Path path, int targetRelease, ArchiveLimits limits)
+      throws IOException {
+    Objects.requireNonNull(path, "path");
+    Objects.requireNonNull(limits, "limits");
     if (targetRelease < MINIMUM_TARGET_RELEASE) {
       throw new JarIndexException("targetRelease must be positive");
+    }
+    if (Files.size(path) > limits.maxArchiveBytes()) {
+      throw new JarIndexException("JAR exceeds the configured archive size limit");
     }
 
     Map<String, String> entries = new TreeMap<>();
@@ -46,8 +68,13 @@ public final class JarIndex {
     try (JarFile jar = new JarFile(path.toFile(), false, JarFile.OPEN_READ)) {
       boolean multiRelease = jar.isMultiRelease();
       Enumeration<JarEntry> jarEntries = jar.entries();
+      int entryCount = 0;
       while (jarEntries.hasMoreElements()) {
         JarEntry entry = jarEntries.nextElement();
+        ++entryCount;
+        if (entryCount > limits.maxEntries()) {
+          throw new JarIndexException("JAR exceeds the configured entry-count limit");
+        }
         if (entry.isDirectory()) {
           continue;
         }
@@ -77,6 +104,10 @@ public final class JarIndex {
         if (!classPath.endsWith(JarFormat.CLASS_FILE_SUFFIX)
             || classPath.length() <= JarFormat.CLASS_FILE_SUFFIX.length()) {
           continue;
+        }
+        if (entry.getSize() > limits.maxClassFileBytes()) {
+          throw new JarIndexException(
+              "Class entry exceeds the configured class-size limit: " + name);
         }
 
         String className =

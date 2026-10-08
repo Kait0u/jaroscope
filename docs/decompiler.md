@@ -5,6 +5,14 @@ uses `JarIndex` to verify the requested class and its release selection, then
 passes the JAR to Vineflower. A memory-backed result saver retains only the
 requested source.
 
+Archive limits reject JARs over the configured compressed size or entry count,
+class entries over the per-class byte limit, and staged class data over the
+aggregate expanded-byte limit. A shared semaphore caps Vineflower runs across
+foreground requests and background warm-up. Each run receives an explicit
+thread count. Because Vineflower runs in-process, JARoscope does not promise a
+hard per-run timeout; Java interruption cannot safely stop arbitrary library
+work. Archive and concurrency limits bound the input and resource footprint.
+
 ```mermaid
 sequenceDiagram
     participant Caller

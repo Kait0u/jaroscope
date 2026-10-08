@@ -8,10 +8,14 @@ import io.modelcontextprotocol.spec.McpSchema.ServerCapabilities;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 import lombok.extern.slf4j.Slf4j;
+import pl.kaitou_dev.jaroscope.cache.CacheStore;
 import pl.kaitou_dev.jaroscope.config.ConfigurationLoader;
 import pl.kaitou_dev.jaroscope.config.JaroscopeConfiguration;
 import pl.kaitou_dev.jaroscope.decompiler.BackgroundDecompilationCoordinator;
+import pl.kaitou_dev.jaroscope.decompiler.CachingDecompiler;
+import pl.kaitou_dev.jaroscope.decompiler.VineflowerDecompiler;
 
 /** Starts the local JARoscope MCP server over standard input and output. */
 @Slf4j
@@ -37,15 +41,22 @@ public final class JaroscopeApplication {
             .load(Path.of(System.getProperty("user.home")), explicitConfiguration);
     StdioServerTransportProvider transport =
         new StdioServerTransportProvider(McpJsonDefaults.getMapper());
+    CachingDecompiler decompiler =
+        new CachingDecompiler(
+            new VineflowerDecompiler(
+                configuration.archiveLimits(),
+                configuration.vineflowerThreadsPerRun(),
+                new Semaphore(configuration.maxConcurrentVineflowerRuns(), true)),
+            new CacheStore(configuration));
     BackgroundDecompilationCoordinator backgroundDecompilation =
-        new BackgroundDecompilationCoordinator(configuration);
+        new BackgroundDecompilationCoordinator(configuration, decompiler);
     ListClassesTool listClassesTool = new ListClassesTool(configuration);
     GetClassInterfaceTool getClassInterfaceTool = new GetClassInterfaceTool(configuration);
     GetClassSourceTool getClassSourceTool =
-        new GetClassSourceTool(configuration, backgroundDecompilation);
+        new GetClassSourceTool(configuration, backgroundDecompilation, decompiler);
     CacheStatusTool cacheStatusTool = new CacheStatusTool(configuration);
     CleanCacheTool cleanCacheTool = new CleanCacheTool(configuration);
-    DecompileJarTool decompileJarTool = new DecompileJarTool(configuration);
+    DecompileJarTool decompileJarTool = new DecompileJarTool(configuration, decompiler);
     McpSyncServer server =
         McpServer.sync(transport)
             .serverInfo(SERVER_NAME, SERVER_VERSION)

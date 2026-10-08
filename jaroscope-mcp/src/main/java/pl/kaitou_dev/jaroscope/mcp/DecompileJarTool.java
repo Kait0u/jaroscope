@@ -23,11 +23,26 @@ import pl.kaitou_dev.jaroscope.decompiler.VineflowerDecompiler;
 public final class DecompileJarTool {
   private final JaroscopeConfiguration configuration;
   private final JarPathPolicy pathPolicy;
+  private final CachingDecompiler decompiler;
 
   /** Creates a bulk decompilation tool backed by application configuration. */
   public DecompileJarTool(JaroscopeConfiguration configuration) {
+    this(
+        configuration,
+        new CachingDecompiler(
+            new VineflowerDecompiler(
+                configuration.archiveLimits(),
+                configuration.vineflowerThreadsPerRun(),
+                new java.util.concurrent.Semaphore(
+                    configuration.maxConcurrentVineflowerRuns(), true)),
+            new CacheStore(configuration)));
+  }
+
+  /** Creates a bulk tool sharing the application's cache and Vineflower resource gate. */
+  public DecompileJarTool(JaroscopeConfiguration configuration, CachingDecompiler decompiler) {
     this.configuration = Objects.requireNonNull(configuration, "configuration");
     pathPolicy = new JarPathPolicy(configuration);
+    this.decompiler = Objects.requireNonNull(decompiler, "decompiler");
   }
 
   /** Builds the MCP tool specification. */
@@ -80,7 +95,7 @@ public final class DecompileJarTool {
               McpToolConstants.MAX_CLASSES_ARGUMENT,
               McpToolConstants.DEFAULT_MAX_CLASSES);
 
-      JarIndex index = JarIndex.open(jarPath, targetRelease);
+      JarIndex index = JarIndex.open(jarPath, targetRelease, configuration.archiveLimits());
       List<String> matchingClasses =
           index.classes().keySet().stream()
               .filter(className -> className.startsWith(packagePrefix))
@@ -89,8 +104,6 @@ public final class DecompileJarTool {
       boolean truncated = matchingClasses.size() > maxClasses;
       List<String> classes = truncated ? matchingClasses.subList(0, maxClasses) : matchingClasses;
 
-      CacheStore cache = new CacheStore(configuration);
-      CachingDecompiler decompiler = new CachingDecompiler(new VineflowerDecompiler(), cache);
       DecompilationBatchResult batch = decompiler.decompileClasses(jarPath, classes, targetRelease);
       int failed = batch.failedClasses().size();
       List<String> failureDetails = new ArrayList<>();

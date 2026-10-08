@@ -13,7 +13,20 @@ import org.junit.jupiter.api.io.TempDir;
 /** Verifies layered YAML configuration and validation. */
 class ConfigurationLoaderTest {
   private static final String USER_CONFIGURATION = "jaroscope:\n  target-release: 17\n";
-  private static final String EXPLICIT_CONFIGURATION = "jaroscope:\n  cache:\n    max-size: 1MiB\n";
+  private static final String EXPLICIT_CONFIGURATION =
+      """
+      jaroscope:
+        cache:
+          max-size: 1MiB
+        archive:
+          max-size: 512MiB
+          max-entries: 50000
+          max-class-size: 32MiB
+          max-expanded-class-size: 1GiB
+        decompiler:
+          max-concurrent-runs: 3
+          threads-per-run: 3
+      """;
 
   @TempDir Path temporaryDirectory;
 
@@ -43,6 +56,34 @@ class ConfigurationLoaderTest {
     assertEquals(
         ConfigurationConstants.DEFAULT_MAX_BACKGROUND_CLASSES,
         configuration.maxBackgroundClasses());
+    assertEquals(ConfigurationConstants.DEFAULT_MAX_ARCHIVE_BYTES, configuration.maxArchiveBytes());
+    assertEquals(
+        ConfigurationConstants.DEFAULT_MAX_ARCHIVE_ENTRIES, configuration.maxArchiveEntries());
+    assertEquals(
+        ConfigurationConstants.DEFAULT_MAX_CLASS_FILE_BYTES, configuration.maxClassFileBytes());
+    assertEquals(
+        ConfigurationConstants.DEFAULT_MAX_EXPANDED_CLASS_BYTES,
+        configuration.maxExpandedClassBytes());
+    assertEquals(
+        ConfigurationConstants.DEFAULT_MAX_CONCURRENT_VINEFLOWER_RUNS,
+        configuration.maxConcurrentVineflowerRuns());
+    assertEquals(
+        ConfigurationConstants.DEFAULT_VINEFLOWER_THREADS_PER_RUN,
+        configuration.vineflowerThreadsPerRun());
+    assertEquals(ConfigurationConstants.DEFAULT_MAX_ARCHIVE_BYTES, configuration.maxArchiveBytes());
+    assertEquals(
+        ConfigurationConstants.DEFAULT_MAX_ARCHIVE_ENTRIES, configuration.maxArchiveEntries());
+    assertEquals(
+        ConfigurationConstants.DEFAULT_MAX_CLASS_FILE_BYTES, configuration.maxClassFileBytes());
+    assertEquals(
+        ConfigurationConstants.DEFAULT_MAX_EXPANDED_CLASS_BYTES,
+        configuration.maxExpandedClassBytes());
+    assertEquals(
+        ConfigurationConstants.DEFAULT_MAX_CONCURRENT_VINEFLOWER_RUNS,
+        configuration.maxConcurrentVineflowerRuns());
+    assertEquals(
+        ConfigurationConstants.DEFAULT_VINEFLOWER_THREADS_PER_RUN,
+        configuration.vineflowerThreadsPerRun());
   }
 
   /** Confirms that an explicit file overrides the home file while preserving other settings. */
@@ -62,6 +103,12 @@ class ConfigurationLoaderTest {
 
     assertEquals(17, configuration.targetRelease());
     assertEquals(1024L * 1024L, configuration.cacheMaxSizeBytes());
+    assertEquals(512L * 1024L * 1024L, configuration.maxArchiveBytes());
+    assertEquals(50_000, configuration.maxArchiveEntries());
+    assertEquals(32L * 1024L * 1024L, configuration.maxClassFileBytes());
+    assertEquals(1024L * 1024L * 1024L, configuration.maxExpandedClassBytes());
+    assertEquals(3, configuration.maxConcurrentVineflowerRuns());
+    assertEquals(3, configuration.vineflowerThreadsPerRun());
   }
 
   /** Confirms that invalid duration units are rejected during configuration loading. */

@@ -42,4 +42,28 @@ class JarIndexTest {
   void rejectsInvalidTargetRelease() throws Exception {
     assertThrows(JarIndexException.class, () -> JarIndex.open(fixture(), 0));
   }
+
+  /** Confirms that an archive exceeding configured intake limits is rejected. */
+  @Test
+  void rejectsArchiveOverConfiguredByteLimit() throws Exception {
+    ArchiveLimits limits = new ArchiveLimits(1L, 100, 1024L, 2048L);
+
+    assertThrows(JarIndexException.class, () -> JarIndex.open(fixture(), 21, limits));
+  }
+
+  /** Confirms that an archive exceeding configured entry limits is rejected. */
+  @Test
+  void rejectsArchiveOverConfiguredEntryLimit() throws Exception {
+    ArchiveLimits limits = new ArchiveLimits(1024L * 1024L, 1, 1024L, 2048L);
+
+    assertThrows(JarIndexException.class, () -> JarIndex.open(fixture(), 21, limits));
+  }
+
+  /** Confirms that visible class entries exceeding the configured size limit are rejected. */
+  @Test
+  void rejectsClassEntryOverConfiguredByteLimit() throws Exception {
+    ArchiveLimits limits = new ArchiveLimits(1024L * 1024L, 100, 1L, 2L);
+
+    assertThrows(JarIndexException.class, () -> JarIndex.open(fixture(), 21, limits));
+  }
 }

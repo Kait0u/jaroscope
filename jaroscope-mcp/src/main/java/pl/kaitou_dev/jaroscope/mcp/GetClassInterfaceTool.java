@@ -75,7 +75,8 @@ public final class GetClassInterfaceTool {
       boolean includeInherited =
           booleanArgument(arguments, McpToolConstants.INCLUDE_INHERITED_ARGUMENT, false);
       ClassInterfaceResult extraction =
-          extractor.extractWithInheritance(jarPath, className, targetRelease, includeInherited);
+          extractor.extractWithInheritance(
+              jarPath, className, targetRelease, includeInherited, configuration.archiveLimits());
       ClassInterface classInterface = extraction.classInterface();
       List<String> warnings = new ArrayList<>(extraction.warnings());
       Map<String, Object> response =

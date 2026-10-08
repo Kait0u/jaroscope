@@ -12,3 +12,11 @@ jaroscope:
     enabled: true
     max-concurrent-jars: 2
     max-classes: 10000
+  archive:
+    max-size: 1GiB
+    max-entries: 100000
+    max-class-size: 64MiB
+    max-expanded-class-size: 2GiB
+  decompiler:
+    max-concurrent-runs: 2
+    threads-per-run: 2

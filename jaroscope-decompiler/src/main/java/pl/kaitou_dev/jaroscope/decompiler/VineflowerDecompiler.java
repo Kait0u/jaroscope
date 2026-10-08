@@ -8,8 +8,10 @@ import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.jar.JarEntry;
@@ -19,7 +21,10 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.java.decompiler.api.Decompiler.Builder;
+import org.jetbrains.java.decompiler.main.extern.IFernflowerPreferences;
 import org.jetbrains.java.decompiler.main.extern.IResultSaver;
+import pl.kaitou_dev.jaroscope.config.ConfigurationConstants;
+import pl.kaitou_dev.jaroscope.core.ArchiveLimits;
 import pl.kaitou_dev.jaroscope.core.JarIndex;
 
 /** Vineflower-backed implementation of the project decompiler boundary. */
@@ -39,6 +44,35 @@ public final class VineflowerDecompiler implements Decompiler {
 
   /** Suffix used when creating temporary JAR views. */
   private static final String TEMP_JAR_SUFFIX = ".jar";
+
+  private final ArchiveLimits archiveLimits;
+  private final int threadsPerRun;
+  private final Semaphore runPermits;
+
+  /** Creates a Vineflower adapter with default archive limits and a local bounded run gate. */
+  public VineflowerDecompiler() {
+    this(
+        ArchiveLimits.defaults(),
+        ConfigurationConstants.DEFAULT_VINEFLOWER_THREADS_PER_RUN,
+        new Semaphore(ConfigurationConstants.DEFAULT_MAX_CONCURRENT_VINEFLOWER_RUNS, true));
+  }
+
+  /**
+   * Creates a Vineflower adapter with shared resource limits and run permits.
+   *
+   * @param archiveLimits configured compressed, entry, and expanded class-byte limits
+   * @param threadsPerRun Vineflower worker threads for one invocation
+   * @param runPermits process-wide semaphore shared by foreground and background invocations
+   */
+  public VineflowerDecompiler(
+      ArchiveLimits archiveLimits, int threadsPerRun, Semaphore runPermits) {
+    this.archiveLimits = Objects.requireNonNull(archiveLimits, "archiveLimits");
+    if (threadsPerRun < 1) {
+      throw new DecompilerException("threadsPerRun must be positive");
+    }
+    this.threadsPerRun = threadsPerRun;
+    this.runPermits = Objects.requireNonNull(runPermits, "runPermits");
+  }
 
   /**
    * Decompiles one selected class using the same release-aware batch path as bulk operations.
@@ -84,7 +118,7 @@ public final class VineflowerDecompiler implements Decompiler {
       int targetRelease,
       Consumer<DecompiledClass> sourceConsumer)
       throws IOException {
-    JarIndex index = JarIndex.open(jarPath, targetRelease);
+    JarIndex index = JarIndex.open(jarPath, targetRelease, archiveLimits);
     Map<String, String> selectedEntries = index.classes();
     for (String binaryName : binaryNames) {
       if (!selectedEntries.containsKey(binaryName)) {
@@ -95,11 +129,16 @@ public final class VineflowerDecompiler implements Decompiler {
       return Set.of();
     }
 
-    Path classInputJar = Files.createTempFile(TEMP_JAR_PREFIX, TEMP_JAR_SUFFIX);
-    Path classContextJar = Files.createTempFile(TEMP_JAR_PREFIX, TEMP_JAR_SUFFIX);
     try {
+      runPermits.acquire();
+    } catch (InterruptedException exception) {
+      Thread.currentThread().interrupt();
+      throw new DecompilerException("Interrupted while waiting for a Vineflower worker", exception);
+    }
+    Path classContextJar = null;
+    try {
+      classContextJar = Files.createTempFile(TEMP_JAR_PREFIX, TEMP_JAR_SUFFIX);
       writeReleaseView(jarPath, selectedEntries, selectedEntries.keySet(), classContextJar);
-      writeReleaseView(jarPath, selectedEntries, binaryNames, classInputJar);
       Set<String> requestedNames = Set.copyOf(binaryNames);
       Set<String> emittedNames = ConcurrentHashMap.newKeySet();
       SourceSaver saver =
@@ -111,9 +150,12 @@ public final class VineflowerDecompiler implements Decompiler {
                 sourceConsumer.accept(source);
               });
       try {
+        String[] allowedPrefixes =
+            binaryNames.stream().map(this::toInternalClassName).toArray(String[]::new);
         new Builder()
-            .inputs(classInputJar.toFile())
-            .libraries(classContextJar.toFile())
+            .inputs(classContextJar.toFile())
+            .allowedPrefixes(allowedPrefixes)
+            .option(IFernflowerPreferences.THREADS, Integer.toString(threadsPerRun))
             .output(saver)
             .build()
             .decompile();
@@ -129,17 +171,21 @@ public final class VineflowerDecompiler implements Decompiler {
           targetRelease);
       return Set.copyOf(emittedNames);
     } finally {
-      Files.deleteIfExists(classInputJar);
-      Files.deleteIfExists(classContextJar);
+      if (classContextJar != null) {
+        Files.deleteIfExists(classContextJar);
+      }
+      runPermits.release();
     }
   }
 
+  /** Writes a target-release view while enforcing per-entry and aggregate expanded-byte caps. */
   private void writeReleaseView(
       Path jarPath, Map<String, String> selectedEntries, Iterable<String> binaryNames, Path output)
       throws IOException {
     try (JarFile input = new JarFile(jarPath.toFile(), false, JarFile.OPEN_READ);
         ZipOutputStream outputJar = new ZipOutputStream(Files.newOutputStream(output))) {
       Set<String> writtenEntries = new HashSet<>();
+      long totalClassBytes = 0L;
       for (String binaryName : binaryNames) {
         String selectedEntryName = selectedEntries.get(binaryName);
         if (selectedEntryName == null) {
@@ -153,17 +199,41 @@ public final class VineflowerDecompiler implements Decompiler {
         if (selectedEntry == null) {
           throw new IOException("Selected class entry disappeared: " + selectedEntryName);
         }
+        if (selectedEntry.getSize() > archiveLimits.maxClassFileBytes()) {
+          throw new DecompilerException(
+              "Class entry exceeds the configured class-size limit: " + binaryName);
+        }
         outputJar.putNextEntry(new ZipEntry(normalizedEntryName));
         try (InputStream classBytes = input.getInputStream(selectedEntry)) {
-          classBytes.transferTo(outputJar);
+          byte[] buffer = new byte[8192];
+          long entryBytes = 0L;
+          int bytesRead;
+          while ((bytesRead = classBytes.read(buffer)) >= 0) {
+            entryBytes += bytesRead;
+            totalClassBytes += bytesRead;
+            if (entryBytes > archiveLimits.maxClassFileBytes()) {
+              throw new DecompilerException(
+                  "Class entry exceeds the configured class-size limit: " + binaryName);
+            }
+            if (totalClassBytes > archiveLimits.maxExpandedClassBytes()) {
+              throw new DecompilerException(
+                  "Selected class data exceeds the configured staging limit");
+            }
+            outputJar.write(buffer, 0, bytesRead);
+          }
         }
         outputJar.closeEntry();
       }
     }
   }
 
+  /** Converts a binary class name to Vineflower's internal slash-separated class name. */
+  private String toInternalClassName(String binaryName) {
+    return binaryName.replace(BINARY_NAME_SEPARATOR, INTERNAL_NAME_SEPARATOR);
+  }
+
   private String toClassEntryName(String binaryName) {
-    return binaryName.replace(BINARY_NAME_SEPARATOR, INTERNAL_NAME_SEPARATOR) + CLASS_FILE_SUFFIX;
+    return toInternalClassName(binaryName) + CLASS_FILE_SUFFIX;
   }
 
   private static final class SourceSaver implements IResultSaver {

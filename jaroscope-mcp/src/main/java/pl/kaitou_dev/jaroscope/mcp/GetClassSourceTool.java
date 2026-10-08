@@ -30,9 +30,26 @@ public final class GetClassSourceTool {
   public GetClassSourceTool(
       JaroscopeConfiguration configuration,
       BackgroundDecompilationCoordinator backgroundDecompilation) {
+    this(
+        configuration,
+        backgroundDecompilation,
+        new CachingDecompiler(
+            new VineflowerDecompiler(
+                configuration.archiveLimits(),
+                configuration.vineflowerThreadsPerRun(),
+                new java.util.concurrent.Semaphore(
+                    configuration.maxConcurrentVineflowerRuns(), true)),
+            new CacheStore(configuration)));
+  }
+
+  /** Creates a source tool sharing the application's cache and Vineflower resource gate. */
+  public GetClassSourceTool(
+      JaroscopeConfiguration configuration,
+      BackgroundDecompilationCoordinator backgroundDecompilation,
+      CachingDecompiler decompiler) {
     this.configuration = Objects.requireNonNull(configuration, "configuration");
     pathPolicy = new JarPathPolicy(configuration);
-    decompiler = new CachingDecompiler(new VineflowerDecompiler(), new CacheStore(configuration));
+    this.decompiler = Objects.requireNonNull(decompiler, "decompiler");
     this.backgroundDecompilation =
         Objects.requireNonNull(backgroundDecompilation, "backgroundDecompilation");
   }
