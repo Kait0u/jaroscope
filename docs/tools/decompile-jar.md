@@ -43,12 +43,11 @@ sequenceDiagram
     participant VF as Vineflower
     Client->>Tool: tools/call
     Tool->>Index: list visible classes
-    loop Each bounded class
-        Tool->>Cache: lookup
-        alt cache miss
-            Tool->>VF: decompile class request
-            VF-->>Cache: store source
-        end
+    Tool->>Cache: lookup bounded class set
+    Cache-->>Tool: cache hits and misses
+    Tool->>VF: one batch call for uncached classes
+    loop Source callback per emitted class
+        VF-->>Cache: store emitted source
     end
     Tool-->>Client: structured summary
 ```

@@ -73,17 +73,10 @@ public final class CacheStore {
       String engineVersion,
       String optionsFingerprint)
       throws IOException {
-    CacheKey key = key(jarPath, binaryName, targetRelease, engineVersion, optionsFingerprint);
-    Path entry = entryPath(key);
-    return withCacheLock(
-        () -> {
-          if (!Files.isRegularFile(entry)) {
-            return Optional.empty();
-          }
-          String source = Files.readString(entry);
-          Files.setLastModifiedTime(entry, FileTime.from(Instant.now()));
-          return Optional.of(source);
-        });
+    try (CacheSession session =
+        openSession(jarPath, targetRelease, engineVersion, optionsFingerprint)) {
+      return session.get(binaryName);
+    }
   }
 
   /**
@@ -105,29 +98,26 @@ public final class CacheStore {
       String optionsFingerprint,
       String source)
       throws IOException {
-    CacheKey key = key(jarPath, binaryName, targetRelease, engineVersion, optionsFingerprint);
-    Path entry = entryPath(key);
-    withCacheLock(
-        () -> {
-          Path temporary =
-              Files.createTempFile(configuration.cacheDirectory(), keyHash(key), TEMP_SUFFIX);
-          try {
-            Files.writeString(temporary, source, StandardCharsets.UTF_8);
-            try {
-              Files.move(
-                  temporary,
-                  entry,
-                  StandardCopyOption.ATOMIC_MOVE,
-                  StandardCopyOption.REPLACE_EXISTING);
-            } catch (AtomicMoveNotSupportedException exception) {
-              Files.move(temporary, entry, StandardCopyOption.REPLACE_EXISTING);
-            }
-          } finally {
-            Files.deleteIfExists(temporary);
-          }
-          return null;
-        });
-    cleanup();
+    try (CacheSession session =
+        openSession(jarPath, targetRelease, engineVersion, optionsFingerprint)) {
+      session.put(binaryName, source);
+    }
+  }
+
+  /**
+   * Opens a scoped cache accessor that hashes the JAR once for multiple class operations.
+   *
+   * @param jarPath the source JAR
+   * @param targetRelease the selected Java release
+   * @param engineVersion the decompiler engine version
+   * @param optionsFingerprint the decompiler options identity
+   * @return a session that must be closed after use
+   * @throws IOException if the source JAR cannot be read
+   */
+  public CacheSession openSession(
+      Path jarPath, int targetRelease, String engineVersion, String optionsFingerprint)
+      throws IOException {
+    return new CacheSession(sha256(jarPath), targetRelease, engineVersion, optionsFingerprint);
   }
 
   /**
@@ -238,21 +228,95 @@ public final class CacheStore {
     }
   }
 
+  private void writeEntry(CacheKey key, String source) throws IOException {
+    Path entry = entryPath(key);
+    Path temporary =
+        Files.createTempFile(configuration.cacheDirectory(), keyHash(key), TEMP_SUFFIX);
+    try {
+      Files.writeString(temporary, source, StandardCharsets.UTF_8);
+      try {
+        Files.move(
+            temporary, entry, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+      } catch (AtomicMoveNotSupportedException exception) {
+        Files.move(temporary, entry, StandardCopyOption.REPLACE_EXISTING);
+      }
+    } finally {
+      Files.deleteIfExists(temporary);
+    }
+  }
+
+  /** Scoped cache access with one content hash and one cleanup pass after bulk stores. */
+  public final class CacheSession implements AutoCloseable {
+    private final String jarSha256;
+    private final int targetRelease;
+    private final String engineVersion;
+    private final String optionsFingerprint;
+    private boolean dirty;
+    private boolean closed;
+
+    private CacheSession(
+        String jarSha256, int targetRelease, String engineVersion, String optionsFingerprint) {
+      this.jarSha256 = jarSha256;
+      this.targetRelease = targetRelease;
+      this.engineVersion = engineVersion;
+      this.optionsFingerprint = optionsFingerprint;
+    }
+
+    /** Looks up one class result and refreshes its access time when present. */
+    public synchronized Optional<String> get(String binaryName) throws IOException {
+      ensureOpen();
+      CacheKey key = cacheKey(binaryName);
+      Path entry = entryPath(key);
+      return withCacheLock(
+          () -> {
+            if (!Files.isRegularFile(entry)) {
+              return Optional.empty();
+            }
+            String source = Files.readString(entry);
+            Files.setLastModifiedTime(entry, FileTime.from(Instant.now()));
+            return Optional.of(source);
+          });
+    }
+
+    /** Stores one class result under the exclusive cache filesystem lock. */
+    public synchronized void put(String binaryName, String source) throws IOException {
+      ensureOpen();
+      CacheKey key = cacheKey(binaryName);
+      withCacheLock(
+          () -> {
+            writeEntry(key, source);
+            return null;
+          });
+      dirty = true;
+    }
+
+    /** Runs cache cleanup once after a session that stored one or more class results. */
+    @Override
+    public synchronized void close() throws IOException {
+      if (closed) {
+        return;
+      }
+      closed = true;
+      if (dirty) {
+        cleanup();
+      }
+    }
+
+    private CacheKey cacheKey(String binaryName) {
+      return new CacheKey(jarSha256, binaryName, targetRelease, engineVersion, optionsFingerprint);
+    }
+
+    private void ensureOpen() {
+      if (closed) {
+        throw new IllegalStateException("Cache session is closed");
+      }
+    }
+  }
+
   @FunctionalInterface
   /** An I/O operation executed while the cache lock is held. */
   private interface IoOperation<T> {
     T run() throws IOException;
-  }
-
-  private CacheKey key(
-      Path jarPath,
-      String binaryName,
-      int targetRelease,
-      String engineVersion,
-      String optionsFingerprint)
-      throws IOException {
-    return new CacheKey(
-        sha256(jarPath), binaryName, targetRelease, engineVersion, optionsFingerprint);
   }
 
   private Path entryPath(CacheKey key) {

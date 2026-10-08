@@ -22,5 +22,8 @@ sequenceDiagram
 ```
 
 The adapter does not write output files or load application classes. The
-current implementation processes the input JAR for each request and retains
-only the requested result. The cache increment will remove repeated work.
+single-class path uses one Vineflower invocation. The batch path stages two
+temporary release-resolved JAR views: requested classes as input, and all
+selected classes as library context. Vineflower is invoked once for the batch,
+and its result saver forwards each requested class as it is emitted. The
+temporary views are deleted when the invocation ends.

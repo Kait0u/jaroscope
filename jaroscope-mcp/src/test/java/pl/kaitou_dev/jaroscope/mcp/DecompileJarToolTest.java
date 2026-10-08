@@ -52,5 +52,22 @@ class DecompileJarToolTest {
     assertTrue(result.structuredContent().toString().contains("truncated=true"));
     assertTrue(result.structuredContent().toString().contains("decompiled=1"));
     assertFalse(result.structuredContent().toString().contains("public class Greeter"));
+
+    McpSchema.CallToolResult repeatedResult =
+        handler.apply(
+            null,
+            McpSchema.CallToolRequest.builder(McpToolConstants.DECOMPILE_JAR_TOOL)
+                .arguments(
+                    Map.of(
+                        McpToolConstants.JAR_PATH_ARGUMENT,
+                        fixture().toString(),
+                        McpToolConstants.PACKAGE_PREFIX_ARGUMENT,
+                        "example.",
+                        McpToolConstants.MAX_CLASSES_ARGUMENT,
+                        1))
+                .build());
+
+    assertTrue(repeatedResult.structuredContent().toString().contains("cacheHits=1"));
+    assertTrue(repeatedResult.structuredContent().toString().contains("decompiled=0"));
   }
 }

@@ -9,13 +9,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import pl.kaitou_dev.jaroscope.cache.CacheStore;
 import pl.kaitou_dev.jaroscope.config.JarPathPolicy;
 import pl.kaitou_dev.jaroscope.config.JaroscopeConfiguration;
 import pl.kaitou_dev.jaroscope.core.JarIndex;
 import pl.kaitou_dev.jaroscope.decompiler.CachingDecompiler;
+import pl.kaitou_dev.jaroscope.decompiler.DecompilationBatchResult;
 import pl.kaitou_dev.jaroscope.decompiler.VineflowerDecompiler;
 
 /** Provides an explicit, bounded operation that decompiles visible classes into the cache. */
@@ -91,49 +91,39 @@ public final class DecompileJarTool {
 
       CacheStore cache = new CacheStore(configuration);
       CachingDecompiler decompiler = new CachingDecompiler(new VineflowerDecompiler(), cache);
-      int cacheHits = 0;
-      int decompiled = 0;
-      int failed = 0;
+      DecompilationBatchResult batch = decompiler.decompileClasses(jarPath, classes, targetRelease);
+      int failed = batch.failedClasses().size();
       List<String> failureDetails = new ArrayList<>();
-      for (String className : classes) {
-        try {
-          Optional<String> cached =
-              cache.get(
-                  jarPath,
-                  className,
-                  targetRelease,
-                  CachingDecompiler.ENGINE_VERSION,
-                  CachingDecompiler.OPTIONS_FINGERPRINT);
-          if (cached.isPresent()) {
-            ++cacheHits;
-          } else {
-            decompiler.decompile(jarPath, className, targetRelease);
-            ++decompiled;
-          }
-        } catch (IOException | RuntimeException exception) {
-          ++failed;
-          if (failureDetails.size() < McpToolConstants.MAX_FAILURE_DETAILS) {
-            failureDetails.add(className + ": " + exception.getMessage());
-          }
+      for (String className : batch.failedClasses()) {
+        if (failureDetails.size() < McpToolConstants.MAX_FAILURE_DETAILS) {
+          failureDetails.add(className + ": Vineflower emitted no source");
         }
       }
 
       Map<String, Object> response =
           Map.of(
-              "jar", jarPath.toString(),
-              "targetRelease", targetRelease,
-              "classCount", classes.size(),
-              "cacheHits", cacheHits,
-              "decompiled", decompiled,
-              "failed", failed,
-              "truncated", truncated,
-              "failureDetails", failureDetails);
+              "jar",
+              jarPath.toString(),
+              "targetRelease",
+              targetRelease,
+              "classCount",
+              classes.size(),
+              "cacheHits",
+              batch.cacheHits(),
+              "decompiled",
+              batch.decompiled(),
+              "failed",
+              failed,
+              "truncated",
+              truncated,
+              "failureDetails",
+              failureDetails);
       log.info(
           "Bulk decompilation complete jar={} classes={} cacheHits={} decompiled={} failed={} truncated={}",
           jarPath,
           classes.size(),
-          cacheHits,
-          decompiled,
+          batch.cacheHits(),
+          batch.decompiled(),
           failed,
           truncated);
       return McpSchema.CallToolResult.builder()
