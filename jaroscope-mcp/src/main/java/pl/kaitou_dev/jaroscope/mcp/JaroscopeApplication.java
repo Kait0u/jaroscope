@@ -11,6 +11,7 @@ import java.util.concurrent.CountDownLatch;
 import lombok.extern.slf4j.Slf4j;
 import pl.kaitou_dev.jaroscope.config.ConfigurationLoader;
 import pl.kaitou_dev.jaroscope.config.JaroscopeConfiguration;
+import pl.kaitou_dev.jaroscope.decompiler.BackgroundDecompilationCoordinator;
 
 /** Starts the local JARoscope MCP server over standard input and output. */
 @Slf4j
@@ -36,9 +37,12 @@ public final class JaroscopeApplication {
             .load(Path.of(System.getProperty("user.home")), explicitConfiguration);
     StdioServerTransportProvider transport =
         new StdioServerTransportProvider(McpJsonDefaults.getMapper());
+    BackgroundDecompilationCoordinator backgroundDecompilation =
+        new BackgroundDecompilationCoordinator(configuration);
     ListClassesTool listClassesTool = new ListClassesTool(configuration);
     GetClassInterfaceTool getClassInterfaceTool = new GetClassInterfaceTool(configuration);
-    GetClassSourceTool getClassSourceTool = new GetClassSourceTool(configuration);
+    GetClassSourceTool getClassSourceTool =
+        new GetClassSourceTool(configuration, backgroundDecompilation);
     CacheStatusTool cacheStatusTool = new CacheStatusTool(configuration);
     CleanCacheTool cleanCacheTool = new CleanCacheTool(configuration);
     DecompileJarTool decompileJarTool = new DecompileJarTool(configuration);
@@ -56,7 +60,9 @@ public final class JaroscopeApplication {
             .build();
     CountDownLatch shutdown = new CountDownLatch(1);
     Runtime.getRuntime()
-        .addShutdownHook(new Thread(() -> close(server, shutdown), "jaroscope-shutdown"));
+        .addShutdownHook(
+            new Thread(
+                () -> close(server, backgroundDecompilation, shutdown), "jaroscope-shutdown"));
     log.info("JARoscope MCP server started");
     shutdown.await();
   }
@@ -72,8 +78,12 @@ public final class JaroscopeApplication {
   }
 
   /** Closes the MCP server and releases the process wait latch. */
-  private static void close(McpSyncServer server, CountDownLatch shutdown) {
+  private static void close(
+      McpSyncServer server,
+      BackgroundDecompilationCoordinator backgroundDecompilation,
+      CountDownLatch shutdown) {
     server.close();
+    backgroundDecompilation.close();
     shutdown.countDown();
   }
 }

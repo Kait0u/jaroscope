@@ -11,6 +11,7 @@ sequenceDiagram
     participant Config as ConfigurationLoader
     participant Logging as LoggingConfigurator
     participant MCP as MCP server
+    participant Jobs as Background coordinator
     Process->>Bootstrap: main(arguments)
     Bootstrap->>Logging: configure stderr logging
     Bootstrap->>MCP: load application class
@@ -19,6 +20,7 @@ sequenceDiagram
     MCP->>MCP: create stdio transport and register tools
     MCP-->>Process: consume stdin and write protocol to stdout
     Process-->>MCP: shutdown signal
+    MCP->>Jobs: stop and await bounded warm-up workers
     MCP->>MCP: close server and transport
 ```
 

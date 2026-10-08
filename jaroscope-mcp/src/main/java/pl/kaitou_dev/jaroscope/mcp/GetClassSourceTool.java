@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import pl.kaitou_dev.jaroscope.cache.CacheStore;
 import pl.kaitou_dev.jaroscope.config.JarPathPolicy;
 import pl.kaitou_dev.jaroscope.config.JaroscopeConfiguration;
+import pl.kaitou_dev.jaroscope.decompiler.BackgroundDecompilationCoordinator;
 import pl.kaitou_dev.jaroscope.decompiler.CachingDecompiler;
 import pl.kaitou_dev.jaroscope.decompiler.DecompiledClass;
 import pl.kaitou_dev.jaroscope.decompiler.VineflowerDecompiler;
@@ -23,12 +24,17 @@ public final class GetClassSourceTool {
   private final JaroscopeConfiguration configuration;
   private final JarPathPolicy pathPolicy;
   private final CachingDecompiler decompiler;
+  private final BackgroundDecompilationCoordinator backgroundDecompilation;
 
-  /** Creates a source tool backed by the configured cache and Vineflower. */
-  public GetClassSourceTool(JaroscopeConfiguration configuration) {
+  /** Creates a source tool backed by the configured cache and background coordinator. */
+  public GetClassSourceTool(
+      JaroscopeConfiguration configuration,
+      BackgroundDecompilationCoordinator backgroundDecompilation) {
     this.configuration = Objects.requireNonNull(configuration, "configuration");
     pathPolicy = new JarPathPolicy(configuration);
     decompiler = new CachingDecompiler(new VineflowerDecompiler(), new CacheStore(configuration));
+    this.backgroundDecompilation =
+        Objects.requireNonNull(backgroundDecompilation, "backgroundDecompilation");
   }
 
   /**
@@ -77,13 +83,21 @@ public final class GetClassSourceTool {
                 + configuration.maxSourceResponseBytes()
                 + " bytes");
       }
+      boolean backgroundWarmupQueued = backgroundDecompilation.schedule(jarPath, targetRelease);
       Map<String, Object> response =
           Map.of(
-              "binaryName", result.binaryName(),
-              "targetRelease", result.targetRelease(),
-              "engineVersion", CachingDecompiler.ENGINE_VERSION,
-              "sourceBytes", sourceBytes,
-              "source", result.source());
+              "binaryName",
+              result.binaryName(),
+              "targetRelease",
+              result.targetRelease(),
+              "engineVersion",
+              CachingDecompiler.ENGINE_VERSION,
+              "sourceBytes",
+              sourceBytes,
+              "backgroundWarmupQueued",
+              backgroundWarmupQueued,
+              "source",
+              result.source());
       String text = McpJsonDefaults.getMapper().writeValueAsString(response);
       log.info(
           "Returned class source class={} targetRelease={} bytes={}",

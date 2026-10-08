@@ -13,6 +13,10 @@ returning a record used by the application.
 The default maximum source response is 1 MiB and is configured with
 `jaroscope.response.max-source-size`.
 
+Background cache warming is enabled by default. Configure it with
+`jaroscope.background-decompilation.enabled`, `max-concurrent-jars`, and
+`max-classes`.
+
 Invalid configuration raises `InvalidConfigurationException`. A rejected JAR
 path raises `JarPathException`. Filesystem failures remain `IOException`.
 

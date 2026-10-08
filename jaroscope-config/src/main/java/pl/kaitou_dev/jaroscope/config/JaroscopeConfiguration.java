@@ -12,7 +12,10 @@ public record JaroscopeConfiguration(
     Duration cacheMaxAge,
     long cacheMaxSizeBytes,
     List<Path> bannedRoots,
-    long maxSourceResponseBytes) {
+    long maxSourceResponseBytes,
+    boolean backgroundDecompilationEnabled,
+    int maxConcurrentBackgroundJars,
+    int maxBackgroundClasses) {
   /** Creates a validated immutable configuration with defensive collection copying. */
   public JaroscopeConfiguration {
     Objects.requireNonNull(cacheDirectory, "cacheDirectory");
@@ -30,6 +33,12 @@ public record JaroscopeConfiguration(
     if (maxSourceResponseBytes < 1) {
       throw new InvalidConfigurationException("maxSourceResponseBytes must be positive");
     }
+    if (maxConcurrentBackgroundJars < 1) {
+      throw new InvalidConfigurationException("maxConcurrentBackgroundJars must be positive");
+    }
+    if (maxBackgroundClasses < 1) {
+      throw new InvalidConfigurationException("maxBackgroundClasses must be positive");
+    }
     bannedRoots = List.copyOf(bannedRoots);
   }
 
@@ -46,6 +55,29 @@ public record JaroscopeConfiguration(
         cacheMaxAge,
         cacheMaxSizeBytes,
         bannedRoots,
-        ConfigurationConstants.DEFAULT_MAX_SOURCE_RESPONSE_BYTES);
+        ConfigurationConstants.DEFAULT_MAX_SOURCE_RESPONSE_BYTES,
+        true,
+        ConfigurationConstants.DEFAULT_MAX_BACKGROUND_JARS,
+        ConfigurationConstants.DEFAULT_MAX_BACKGROUND_CLASSES);
+  }
+
+  /** Creates configuration with default response and background-decompilation settings. */
+  public JaroscopeConfiguration(
+      int targetRelease,
+      Path cacheDirectory,
+      Duration cacheMaxAge,
+      long cacheMaxSizeBytes,
+      List<Path> bannedRoots,
+      long maxSourceResponseBytes) {
+    this(
+        targetRelease,
+        cacheDirectory,
+        cacheMaxAge,
+        cacheMaxSizeBytes,
+        bannedRoots,
+        maxSourceResponseBytes,
+        true,
+        ConfigurationConstants.DEFAULT_MAX_BACKGROUND_JARS,
+        ConfigurationConstants.DEFAULT_MAX_BACKGROUND_CLASSES);
   }
 }

@@ -49,6 +49,18 @@ public final class ConfigurationLoader {
   /** The YAML key for the maximum source response size. */
   private static final String MAX_SOURCE_SIZE_KEY = "max-source-size";
 
+  /** The YAML key for background decompilation settings. */
+  private static final String BACKGROUND_DECOMPILATION_KEY = "background-decompilation";
+
+  /** The YAML key enabling background decompilation. */
+  private static final String BACKGROUND_ENABLED_KEY = "enabled";
+
+  /** The YAML key limiting concurrent background JAR jobs. */
+  private static final String MAX_CONCURRENT_BACKGROUND_JARS_KEY = "max-concurrent-jars";
+
+  /** The YAML key limiting classes warmed for one JAR. */
+  private static final String MAX_BACKGROUND_CLASSES_KEY = "max-classes";
+
   /** The supported suffix for day durations. */
   private static final String DAYS_SUFFIX = "d";
 
@@ -155,6 +167,7 @@ public final class ConfigurationLoader {
     long cacheMaxSizeBytes = parseBytes(cache.path(CACHE_MAX_SIZE_KEY).asText());
     long maxSourceResponseBytes =
         parseBytes(settings.path(RESPONSE_KEY).path(MAX_SOURCE_SIZE_KEY).asText());
+    JsonNode background = settings.path(BACKGROUND_DECOMPILATION_KEY);
     List<Path> bannedRoots = new ArrayList<>();
     Iterator<JsonNode> bannedRootNodes =
         settings.path(SECURITY_KEY).path(BANNED_ROOTS_KEY).elements();
@@ -168,7 +181,21 @@ public final class ConfigurationLoader {
         cacheMaxAge,
         cacheMaxSizeBytes,
         bannedRoots,
-        maxSourceResponseBytes);
+        maxSourceResponseBytes,
+        background.path(BACKGROUND_ENABLED_KEY).asBoolean(),
+        positiveInteger(
+            background.path(MAX_CONCURRENT_BACKGROUND_JARS_KEY).asInt(),
+            MAX_CONCURRENT_BACKGROUND_JARS_KEY),
+        positiveInteger(
+            background.path(MAX_BACKGROUND_CLASSES_KEY).asInt(), MAX_BACKGROUND_CLASSES_KEY));
+  }
+
+  /** Rejects a non-positive integer configuration value. */
+  private int positiveInteger(int value, String key) {
+    if (value < 1) {
+      throw new InvalidConfigurationException(key + " must be positive");
+    }
+    return value;
   }
 
   /** Expands the home-directory shorthand used by the YAML configuration. */

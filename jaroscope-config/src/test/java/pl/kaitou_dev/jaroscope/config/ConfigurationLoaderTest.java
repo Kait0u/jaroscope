@@ -2,6 +2,7 @@ package pl.kaitou_dev.jaroscope.config;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -35,6 +36,13 @@ class ConfigurationLoaderTest {
     assertEquals(
         ConfigurationConstants.DEFAULT_MAX_SOURCE_RESPONSE_BYTES,
         configuration.maxSourceResponseBytes());
+    assertTrue(configuration.backgroundDecompilationEnabled());
+    assertEquals(
+        ConfigurationConstants.DEFAULT_MAX_BACKGROUND_JARS,
+        configuration.maxConcurrentBackgroundJars());
+    assertEquals(
+        ConfigurationConstants.DEFAULT_MAX_BACKGROUND_CLASSES,
+        configuration.maxBackgroundClasses());
   }
 
   /** Confirms that an explicit file overrides the home file while preserving other settings. */

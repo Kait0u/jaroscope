@@ -17,6 +17,12 @@ public final class ConfigurationConstants {
   /** The default maximum UTF-8 source size returned in one MCP response. */
   public static final long DEFAULT_MAX_SOURCE_RESPONSE_BYTES = 1024L * 1024L;
 
+  /** The default number of JARs decompiled concurrently in the background. */
+  public static final int DEFAULT_MAX_BACKGROUND_JARS = 2;
+
+  /** The default maximum number of classes warmed per background JAR job. */
+  public static final int DEFAULT_MAX_BACKGROUND_CLASSES = 10_000;
+
   /** The relative directory used for the user's JARoscope configuration. */
   public static final String USER_CONFIGURATION_DIRECTORY = ".jaroscope";
 
