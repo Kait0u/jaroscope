@@ -6,8 +6,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -70,6 +74,47 @@ class CacheStoreTest {
 
     store.put(jar, "example.Other", 21, ENGINE_VERSION, OPTIONS, "two");
 
+    assertEquals(1, sourceEntries().size());
+  }
+
+  /** Confirms that independent store instances safely serialize writes to the same entry. */
+  @Test
+  void serializesConcurrentWritesAcrossStoreInstances() throws Exception {
+    Path jar = Files.createFile(temporaryDirectory.resolve("example.jar"));
+    JaroscopeConfiguration configuration = configuration(Duration.ofDays(30), 1024L);
+    int writerCount = 8;
+    ExecutorService writers = Executors.newFixedThreadPool(writerCount);
+    try {
+      List<Future<?>> writes = new ArrayList<>();
+      for (int writerIndex = 0; writerIndex < writerCount; ++writerIndex) {
+        int sourceNumber = writerIndex;
+        writes.add(
+            writers.submit(
+                () -> {
+                  try {
+                    new CacheStore(configuration)
+                        .put(
+                            jar,
+                            BINARY_NAME,
+                            21,
+                            ENGINE_VERSION,
+                            OPTIONS,
+                            "source-" + sourceNumber);
+                  } catch (Exception exception) {
+                    throw new RuntimeException(exception);
+                  }
+                }));
+      }
+      for (Future<?> write : writes) {
+        write.get();
+      }
+    } finally {
+      writers.shutdownNow();
+    }
+
+    Optional<String> result =
+        new CacheStore(configuration).get(jar, BINARY_NAME, 21, ENGINE_VERSION, OPTIONS);
+    assertTrue(result.orElseThrow().matches("source-[0-7]"));
     assertEquals(1, sourceEntries().size());
   }
 
