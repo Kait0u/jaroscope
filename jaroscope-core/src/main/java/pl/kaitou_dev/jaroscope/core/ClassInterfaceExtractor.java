@@ -25,7 +25,7 @@ public final class ClassInterfaceExtractor {
   private static final String CONSTRUCTOR_NAME = "<init>";
   private static final String INTERNAL_NAME_SEPARATOR = "/";
   private static final String BINARY_NAME_SEPARATOR = ".";
-  private static final String CLASS_SUFFIX = ".class";
+  private final ClassInheritanceResolver inheritanceResolver = new ClassInheritanceResolver(this);
 
   /**
    * Extracts public and protected members and declared annotations for one selected class.
@@ -41,7 +41,11 @@ public final class ClassInterfaceExtractor {
       throws IOException {
     Objects.requireNonNull(jarPath, "jarPath");
     Objects.requireNonNull(binaryName, "binaryName");
-    JarIndex index = JarIndex.open(jarPath, targetRelease);
+    return extract(jarPath, binaryName, JarIndex.open(jarPath, targetRelease));
+  }
+
+  /** Extracts a selected class using a prebuilt index shared by hierarchy traversal. */
+  ClassInterface extract(Path jarPath, String binaryName, JarIndex index) throws IOException {
     String entryName =
         index
             .entryFor(binaryName)
@@ -57,6 +61,28 @@ public final class ClassInterfaceExtractor {
         return visitor.result();
       }
     }
+  }
+
+  /**
+   * Extracts a class interface and optionally resolves members and inherited annotations from the
+   * same JAR.
+   *
+   * @param jarPath the JAR to inspect
+   * @param binaryName the requested binary class name
+   * @param targetRelease the Java release used for multi-release selection
+   * @param includeInheritedMembers whether to resolve parents present in this JAR
+   * @return the interface and any warnings for unresolved parent types
+   * @throws IOException if the archive cannot be read
+   * @throws ClassInterfaceException if the requested class is missing or malformed
+   */
+  public ClassInterfaceResult extractWithInheritance(
+      Path jarPath, String binaryName, int targetRelease, boolean includeInheritedMembers)
+      throws IOException {
+    ClassInterface declared = extract(jarPath, binaryName, targetRelease);
+    if (!includeInheritedMembers) {
+      return new ClassInterfaceResult(declared, List.of());
+    }
+    return inheritanceResolver.resolve(jarPath, declared, targetRelease);
   }
 
   private static MemberVisibility visibility(int access) {
@@ -171,6 +197,7 @@ public final class ClassInterfaceExtractor {
                   typeName(methodType.getReturnType()),
                   parameters,
                   visibility(access),
+                  (access & Opcodes.ACC_STATIC) != 0,
                   signature);
           methods.add(method);
           return new MethodAnnotationVisitor(method.annotations);
@@ -232,6 +259,7 @@ public final class ClassInterfaceExtractor {
     private final String returnType;
     private final List<String> parameterTypes;
     private final MemberVisibility visibility;
+    private final boolean isStatic;
     private final String genericSignature;
     private final List<AnnotationInfo> annotations = new ArrayList<>();
 
@@ -240,17 +268,19 @@ public final class ClassInterfaceExtractor {
         String returnType,
         List<String> parameterTypes,
         MemberVisibility visibility,
+        boolean isStatic,
         String genericSignature) {
       this.name = name;
       this.returnType = returnType;
       this.parameterTypes = parameterTypes;
       this.visibility = visibility;
+      this.isStatic = isStatic;
       this.genericSignature = genericSignature;
     }
 
     private MethodInterface toInterface() {
       return new MethodInterface(
-          name, returnType, parameterTypes, visibility, genericSignature, annotations);
+          name, returnType, parameterTypes, visibility, isStatic, genericSignature, annotations);
     }
   }
 

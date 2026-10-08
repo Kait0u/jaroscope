@@ -37,3 +37,9 @@ classDiagram
 
 Class literals are returned as type names. They are never resolved through a
 class loader.
+
+Optional inheritance resolution follows superclasses and interfaces found in
+the inspected JAR at the requested Java release. It does not search external
+JARs. Missing parent types produce warnings and partial results. Inherited
+annotations are limited to superclass annotations whose annotation types carry
+`java.lang.annotation.Inherited`.

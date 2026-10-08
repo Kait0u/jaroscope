@@ -14,6 +14,7 @@ import pl.kaitou_dev.jaroscope.config.JarPathPolicy;
 import pl.kaitou_dev.jaroscope.config.JaroscopeConfiguration;
 import pl.kaitou_dev.jaroscope.core.ClassInterface;
 import pl.kaitou_dev.jaroscope.core.ClassInterfaceExtractor;
+import pl.kaitou_dev.jaroscope.core.ClassInterfaceResult;
 
 /** Provides the MCP tool for extracting one class's declared interface. */
 @Slf4j
@@ -73,12 +74,10 @@ public final class GetClassInterfaceTool {
               arguments, McpToolConstants.TARGET_RELEASE_ARGUMENT, configuration.targetRelease());
       boolean includeInherited =
           booleanArgument(arguments, McpToolConstants.INCLUDE_INHERITED_ARGUMENT, false);
-      ClassInterface classInterface = extractor.extract(jarPath, className, targetRelease);
-      List<String> warnings = new ArrayList<>();
-      if (includeInherited) {
-        warnings.add(
-            "Inherited member resolution is not available; only declared members are returned.");
-      }
+      ClassInterfaceResult extraction =
+          extractor.extractWithInheritance(jarPath, className, targetRelease, includeInherited);
+      ClassInterface classInterface = extraction.classInterface();
+      List<String> warnings = new ArrayList<>(extraction.warnings());
       Map<String, Object> response =
           Map.of(
               "targetRelease", targetRelease,

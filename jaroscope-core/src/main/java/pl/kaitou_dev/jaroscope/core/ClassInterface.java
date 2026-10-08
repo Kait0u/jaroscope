@@ -2,7 +2,7 @@ package pl.kaitou_dev.jaroscope.core;
 
 import java.util.List;
 
-/** The declared public and protected interface of one class-file entry. */
+/** The declared or hierarchy-resolved public and protected interface of one class-file entry. */
 public record ClassInterface(
     String binaryName,
     ClassKind kind,

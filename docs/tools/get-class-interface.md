@@ -16,9 +16,11 @@ annotations. It never loads the class or its annotation types.
 ```
 
 `jarPath` and `className` are required. `targetRelease` defaults to the
-configured release. `includeInheritedMembers` defaults to `false`. When it is
-`true`, the current result remains declared-only and includes a warning until
-dependency-aware inheritance resolution is implemented.
+configured release. `includeInheritedMembers` defaults to `false`. When true,
+JARoscope resolves superclass and interface declarations present in the
+inspected JAR. Missing parent types produce warnings and partial results.
+Inherited class annotations are included only when their annotation type has
+`java.lang.annotation.Inherited`; annotations are not inherited from interfaces.
 
 ## Response
 
@@ -53,9 +55,15 @@ sequenceDiagram
     Client->>MCP: tools/call get_class_interface
     MCP->>Policy: validate jarPath
     Policy-->>MCP: permitted real path
-    MCP->>Extractor: extract(path, className, targetRelease)
+    MCP->>Extractor: extractWithInheritance(path, className, targetRelease, flag)
     Extractor->>ASM: visit selected class bytes
-    ASM-->>Extractor: declarations and annotations
-    Extractor-->>MCP: ClassInterface records
+    ASM-->>Extractor: declarations, hierarchy, annotations
+    opt includeInheritedMembers
+        loop Parents present in inspected JAR
+            Extractor->>ASM: visit parent declarations
+            ASM-->>Extractor: inherited members and annotations
+        end
+    end
+    Extractor-->>MCP: ClassInterfaceResult and warnings
     MCP-->>Client: text and structured JSON content
 ```

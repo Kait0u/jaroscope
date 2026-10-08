@@ -16,7 +16,7 @@ import pl.kaitou_dev.jaroscope.config.JaroscopeConfiguration;
 
 /** Verifies the list-classes tool against the committed multi-release fixture. */
 class ListClassesToolTest {
-  private static final String GREETER_CLASS = "example.Greeter";
+  private static final String FIRST_SORTED_CLASS = "example.BaseGreeter";
 
   /** Returns the committed fixture supplied by the core module. */
   private static Path fixture() throws URISyntaxException {
@@ -50,6 +50,6 @@ class ListClassesToolTest {
 
     assertFalse(result.isError());
     assertTrue(text.contains("truncated=true"));
-    assertTrue(text.contains(GREETER_CLASS));
+    assertTrue(text.contains(FIRST_SORTED_CLASS));
   }
 }

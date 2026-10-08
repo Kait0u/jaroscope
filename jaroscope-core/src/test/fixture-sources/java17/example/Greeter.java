@@ -1,7 +1,7 @@
 package example;
 
 @Marker(name = "java17", type = Integer.class)
-public class Greeter {
+public class Greeter extends BaseGreeter implements Contract {
   private String secret;
 
   @Marker(name = "field17")

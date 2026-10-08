@@ -1,6 +1,7 @@
 package pl.kaitou_dev.jaroscope.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URISyntaxException;
@@ -46,5 +47,45 @@ class ClassInterfaceExtractorTest {
         new ClassInterfaceExtractor().extract(fixture(), GREETER_CLASS, 21);
 
     assertTrue(classInterface.fields().stream().noneMatch(field -> field.name().equals("secret")));
+  }
+
+  /** Confirms that optional hierarchy resolution merges inherited members and annotations. */
+  @Test
+  void resolvesInheritedMembersAndInheritedAnnotationsWithinJar() throws Exception {
+    ClassInterfaceResult result =
+        new ClassInterfaceExtractor().extractWithInheritance(fixture(), GREETER_CLASS, 21, true);
+    ClassInterface classInterface = result.classInterface();
+
+    assertTrue(
+        classInterface.fields().stream().anyMatch(field -> field.name().equals("inheritedValue")));
+    assertTrue(
+        classInterface.fields().stream().anyMatch(field -> field.name().equals("CONTRACT_NAME")));
+    assertTrue(
+        classInterface.methods().stream()
+            .anyMatch(method -> method.name().equals("inheritedGreeting")));
+    assertTrue(
+        classInterface.methods().stream()
+            .anyMatch(method -> method.name().equals("contractGreeting")));
+    assertFalse(
+        classInterface.methods().stream().anyMatch(method -> method.name().equals("staticHelper")));
+    assertTrue(
+        classInterface.annotations().stream()
+            .anyMatch(annotation -> annotation.typeName().equals("example.Marker")));
+    assertTrue(
+        classInterface.annotations().stream()
+            .anyMatch(annotation -> annotation.typeName().equals("example.InheritedTag")));
+    assertTrue(result.warnings().isEmpty());
+  }
+
+  /** Confirms that unresolved parent types produce warnings while retaining local declarations. */
+  @Test
+  void returnsPartialInterfaceWhenParentIsOutsideJar() throws Exception {
+    ClassInterfaceResult result =
+        new ClassInterfaceExtractor()
+            .extractWithInheritance(fixture(), "example.MissingParentChild", 21, true);
+
+    assertEquals("example.MissingParentChild", result.classInterface().binaryName());
+    assertTrue(
+        result.warnings().stream().anyMatch(warning -> warning.contains("java.io.IOException")));
   }
 }
