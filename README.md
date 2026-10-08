@@ -11,13 +11,14 @@ warming by default. The server exposes `list_classes`,
 - `jaroscope-core`: archive indexing and bytecode-based class-interface extraction.
 - `jaroscope-config`: typed YAML configuration and JAR path policy.
 - `jaroscope-mcp`: owns the stdio transport and stderr logging configuration.
-- `jaroscope-decompiler`: Vineflower adapter; cache is not implemented yet.
+- `jaroscope-decompiler`: Vineflower adapter, cache decorator, and background warm-up coordinator.
 - `buildSrc`: shared Java toolchain, JUnit and Google Java Style via Spotless.
 
 The index selects the highest available class version no greater than the
 requested Java release, provided the manifest declares `Multi-Release: true`.
-It does not load JAR classes. Future work includes decompilation and a
-configurable cache under `~/.jaroscope/cache`.
+JAR inspection and interface extraction do not load classes. Vineflower source
+is cached under `~/.jaroscope/cache`, and class selection honors multi-release
+JAR versions.
 See [JAR indexing internals](docs/jar-index.md) for the current selection logic.
 See [class-interface extraction](docs/class-interface.md) for bytecode metadata extraction.
 See [decompiler internals](docs/decompiler.md) for source extraction.
@@ -25,6 +26,7 @@ See [cache internals](docs/cache.md) for cache identity and cleanup.
 See [configuration and path policy](docs/configuration.md) for configuration layering and access checks.
 See [logging](docs/logging.md) for the stderr format and stream boundary.
 See [application flow](docs/application.md) for startup and transport behavior.
+See [Claude Code and OpenCode setup](docs/clients.md) for client configuration.
 See [`list_classes`](docs/tools/list-classes.md) for the class discovery tool contract.
 See [`get_class_interface`](docs/tools/get-class-interface.md) for interface extraction.
 See [`get_class_source`](docs/tools/get-class-source.md) for cached source extraction.

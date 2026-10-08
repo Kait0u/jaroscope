@@ -17,3 +17,7 @@ dependencies {
 application {
   mainClass = "pl.kaitou_dev.jaroscope.mcp.JaroscopeBootstrap"
 }
+
+tasks.named<Test>("test") {
+  dependsOn(tasks.named("installDist"))
+}
