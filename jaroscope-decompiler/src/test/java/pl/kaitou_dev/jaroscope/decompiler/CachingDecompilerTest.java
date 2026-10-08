@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.jar.JarOutputStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import pl.kaitou_dev.jaroscope.cache.CacheStore;
@@ -19,7 +20,10 @@ class CachingDecompilerTest {
   /** Confirms that the delegate runs once for two identical requests. */
   @Test
   void reusesCachedSource() throws Exception {
-    Path jar = Files.createFile(temporaryDirectory.resolve("example.jar"));
+    Path jar = temporaryDirectory.resolve("example.jar");
+    try (JarOutputStream ignored = new JarOutputStream(Files.newOutputStream(jar))) {
+      // An empty, valid archive is sufficient for exercising cache identity.
+    }
     AtomicInteger calls = new AtomicInteger();
     Decompiler delegate =
         (path, binaryName, targetRelease) -> {

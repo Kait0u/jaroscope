@@ -1,8 +1,8 @@
 # `clean_cache`
 
 Removes expired entries and enforces the configured size limit. With
-`clearAll: true`, it removes all JARoscope-owned `.source` entries. It does not
-touch other files in the cache directory.
+`clearAll: true`, it removes all JARoscope-owned artifact directories and
+legacy flat `.source` entries. It does not touch unrelated cache-root files.
 
 ```json
 {

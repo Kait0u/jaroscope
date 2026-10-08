@@ -1,6 +1,8 @@
 # `cache_status`
 
 Returns usage and cleanup eligibility for the JARoscope-owned cache.
+`entryCount` and `totalBytes` describe cached `.java` source files. Artifact
+metadata and cache lock files are not included in the byte budget.
 
 ```json
 {

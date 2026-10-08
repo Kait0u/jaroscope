@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
@@ -38,7 +37,9 @@ class CacheAdministrationToolTest {
   /** Confirms that clear-all removes only owned source entries. */
   @Test
   void clearsOwnedCacheEntries() throws Exception {
-    Path jar = Files.createFile(temporaryDirectory.resolve("example.jar"));
+    Path jar =
+        Path.of(
+            CacheAdministrationToolTest.class.getResource("/fixtures/multi-release.jar").toURI());
     new CacheStore(configuration()).put(jar, "example.Greeter", 21, "1.12.0", "default", "source");
     BiFunction<McpSyncServerExchange, McpSchema.CallToolRequest, McpSchema.CallToolResult> handler =
         new CleanCacheTool(configuration()).specification().callHandler();
