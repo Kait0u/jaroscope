@@ -18,6 +18,8 @@ class ConfigurationLoaderTest {
       jaroscope:
         cache:
           max-size: 1MiB
+        response:
+          max-jar-resource-size: 3KiB
         archive:
           max-size: 512MiB
           max-entries: 50000
@@ -84,6 +86,8 @@ class ConfigurationLoaderTest {
     assertEquals(
         ConfigurationConstants.DEFAULT_VINEFLOWER_THREADS_PER_RUN,
         configuration.vineflowerThreadsPerRun());
+    assertEquals(
+        ConfigurationConstants.DEFAULT_MAX_JAR_RESOURCE_BYTES, configuration.maxJarResourceBytes());
   }
 
   /** Confirms that an explicit file overrides the home file while preserving other settings. */
@@ -109,6 +113,7 @@ class ConfigurationLoaderTest {
     assertEquals(1024L * 1024L * 1024L, configuration.maxExpandedClassBytes());
     assertEquals(3, configuration.maxConcurrentVineflowerRuns());
     assertEquals(3, configuration.vineflowerThreadsPerRun());
+    assertEquals(3L * 1024L, configuration.maxJarResourceBytes());
   }
 
   /** Confirms that invalid duration units are rejected during configuration loading. */

@@ -2,9 +2,8 @@
 
 JARoscope is a local stdio MCP server for exploring Java JARs from clients such
 as Claude Code and OpenCode. Source requests trigger bounded background cache
-warming by default. The server exposes `list_classes`,
-`get_class_interface`, `get_class_source`, `cache_status`, `clean_cache`, and
-`decompile_jar`.
+warming by default. Tools list classes and JAR resources, inspect interfaces,
+read source and resources, manage the source cache, and explicitly decompile JARs.
 
 ## Modules
 
@@ -32,6 +31,8 @@ See [`get_class_interface`](docs/tools/get-class-interface.md) for interface ext
 See [`get_class_source`](docs/tools/get-class-source.md) for cached source extraction.
 See [`cache_status`](docs/tools/cache-status.md) and [`clean_cache`](docs/tools/clean-cache.md) for cache administration.
 See [`decompile_jar`](docs/tools/decompile-jar.md) for explicit bulk decompilation.
+See [`list_jar_resources`](docs/tools/list-jar-resources.md) and
+[`get_jar_resource`](docs/tools/get-jar-resource.md) for non-class JAR entries.
 
 ## Build and test
 

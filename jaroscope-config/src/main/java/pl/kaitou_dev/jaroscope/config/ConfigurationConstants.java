@@ -19,6 +19,9 @@ public final class ConfigurationConstants {
   /** The default maximum UTF-8 source size returned in one MCP response. */
   public static final long DEFAULT_MAX_SOURCE_RESPONSE_BYTES = 1024L * 1024L;
 
+  /** The default maximum raw entry size returned by one JAR resource request. */
+  public static final long DEFAULT_MAX_JAR_RESOURCE_BYTES = 1024L * 1024L;
+
   /** The default number of JARs decompiled concurrently in the background. */
   public static final int DEFAULT_MAX_BACKGROUND_JARS = 2;
 

@@ -22,7 +22,8 @@ public record JaroscopeConfiguration(
     long maxClassFileBytes,
     long maxExpandedClassBytes,
     int maxConcurrentVineflowerRuns,
-    int vineflowerThreadsPerRun) {
+    int vineflowerThreadsPerRun,
+    long maxJarResourceBytes) {
   /** Creates a validated immutable configuration with defensive collection copying. */
   public JaroscopeConfiguration {
     Objects.requireNonNull(cacheDirectory, "cacheDirectory");
@@ -39,6 +40,9 @@ public record JaroscopeConfiguration(
     }
     if (maxSourceResponseBytes < 1) {
       throw new InvalidConfigurationException("maxSourceResponseBytes must be positive");
+    }
+    if (maxJarResourceBytes < 1) {
+      throw new InvalidConfigurationException("maxJarResourceBytes must be positive");
     }
     if (maxConcurrentBackgroundJars < 1) {
       throw new InvalidConfigurationException("maxConcurrentBackgroundJars must be positive");
@@ -60,6 +64,42 @@ public record JaroscopeConfiguration(
           "At least two Vineflower runs are required when background decompilation is enabled");
     }
     bannedRoots = List.copyOf(bannedRoots);
+  }
+
+  /** Creates configuration with the default JAR resource response limit. */
+  public JaroscopeConfiguration(
+      int targetRelease,
+      Path cacheDirectory,
+      Duration cacheMaxAge,
+      long cacheMaxSizeBytes,
+      List<Path> bannedRoots,
+      long maxSourceResponseBytes,
+      boolean backgroundDecompilationEnabled,
+      int maxConcurrentBackgroundJars,
+      int maxBackgroundClasses,
+      long maxArchiveBytes,
+      int maxArchiveEntries,
+      long maxClassFileBytes,
+      long maxExpandedClassBytes,
+      int maxConcurrentVineflowerRuns,
+      int vineflowerThreadsPerRun) {
+    this(
+        targetRelease,
+        cacheDirectory,
+        cacheMaxAge,
+        cacheMaxSizeBytes,
+        bannedRoots,
+        maxSourceResponseBytes,
+        backgroundDecompilationEnabled,
+        maxConcurrentBackgroundJars,
+        maxBackgroundClasses,
+        maxArchiveBytes,
+        maxArchiveEntries,
+        maxClassFileBytes,
+        maxExpandedClassBytes,
+        maxConcurrentVineflowerRuns,
+        vineflowerThreadsPerRun,
+        ConfigurationConstants.DEFAULT_MAX_JAR_RESOURCE_BYTES);
   }
 
   /** Returns the archive limits consumed by indexing and class extraction. */

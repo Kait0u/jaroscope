@@ -71,6 +71,8 @@ class JaroscopeStdioIntegrationTest {
       assertTrue(toolsResponse.contains(McpToolConstants.CACHE_STATUS_TOOL));
       assertTrue(toolsResponse.contains(McpToolConstants.CLEAN_CACHE_TOOL));
       assertTrue(toolsResponse.contains(McpToolConstants.DECOMPILE_JAR_TOOL));
+      assertTrue(toolsResponse.contains(McpToolConstants.LIST_JAR_RESOURCES_TOOL));
+      assertTrue(toolsResponse.contains(McpToolConstants.GET_JAR_RESOURCE_TOOL));
 
       Path fixture = fixture();
       String classListResponse =
@@ -113,6 +115,48 @@ class JaroscopeStdioIntegrationTest {
       String cacheStatusResponse =
           callTool(process, outputReader, 6, McpToolConstants.CACHE_STATUS_TOOL, Map.of());
       assertTrue(cacheStatusResponse.contains("entryCount"));
+
+      String resourceListResponse =
+          callTool(
+              process,
+              outputReader,
+              7,
+              McpToolConstants.LIST_JAR_RESOURCES_TOOL,
+              Map.of(
+                  McpToolConstants.JAR_PATH_ARGUMENT,
+                  fixture.toString(),
+                  McpToolConstants.RESOURCE_PREFIX_ARGUMENT,
+                  "example/"));
+      assertTrue(resourceListResponse.contains("example/config.properties"));
+
+      String textResourceResponse =
+          callTool(
+              process,
+              outputReader,
+              8,
+              McpToolConstants.GET_JAR_RESOURCE_TOOL,
+              Map.of(
+                  McpToolConstants.JAR_PATH_ARGUMENT,
+                  fixture.toString(),
+                  McpToolConstants.RESOURCE_NAME_ARGUMENT,
+                  "example/config.properties",
+                  McpToolConstants.TARGET_RELEASE_ARGUMENT,
+                  21));
+      assertTrue(textResourceResponse.contains("generation=java17"));
+
+      String binaryResourceResponse =
+          callTool(
+              process,
+              outputReader,
+              9,
+              McpToolConstants.GET_JAR_RESOURCE_TOOL,
+              Map.of(
+                  McpToolConstants.JAR_PATH_ARGUMENT,
+                  fixture.toString(),
+                  McpToolConstants.RESOURCE_NAME_ARGUMENT,
+                  "example/binary.dat"));
+      assertTrue(binaryResourceResponse.contains("\"encoding\":\"base64\""));
+      assertTrue(binaryResourceResponse.contains("AQL/"));
     } finally {
       process.destroy();
       boolean stopped = process.waitFor(15, TimeUnit.SECONDS);

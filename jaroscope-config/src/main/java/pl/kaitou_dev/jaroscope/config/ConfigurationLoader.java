@@ -49,6 +49,9 @@ public final class ConfigurationLoader {
   /** The YAML key for the maximum source response size. */
   private static final String MAX_SOURCE_SIZE_KEY = "max-source-size";
 
+  /** The YAML key for the maximum raw JAR resource response size. */
+  private static final String MAX_JAR_RESOURCE_SIZE_KEY = "max-jar-resource-size";
+
   /** The YAML key for background decompilation settings. */
   private static final String BACKGROUND_DECOMPILATION_KEY = "background-decompilation";
 
@@ -191,6 +194,8 @@ public final class ConfigurationLoader {
     long cacheMaxSizeBytes = parseBytes(cache.path(CACHE_MAX_SIZE_KEY).asText());
     long maxSourceResponseBytes =
         parseBytes(settings.path(RESPONSE_KEY).path(MAX_SOURCE_SIZE_KEY).asText());
+    long maxJarResourceBytes =
+        parseBytes(settings.path(RESPONSE_KEY).path(MAX_JAR_RESOURCE_SIZE_KEY).asText());
     JsonNode background = settings.path(BACKGROUND_DECOMPILATION_KEY);
     JsonNode archive = settings.path(ARCHIVE_KEY);
     JsonNode decompiler = settings.path(DECOMPILER_KEY);
@@ -223,7 +228,8 @@ public final class ConfigurationLoader {
             MAX_CONCURRENT_VINEFLOWER_RUNS_KEY),
         positiveInteger(
             decompiler.path(VINEFLOWER_THREADS_PER_RUN_KEY).asInt(),
-            VINEFLOWER_THREADS_PER_RUN_KEY));
+            VINEFLOWER_THREADS_PER_RUN_KEY),
+        maxJarResourceBytes);
   }
 
   /** Rejects a non-positive integer configuration value. */

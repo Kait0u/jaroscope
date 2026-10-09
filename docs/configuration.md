@@ -12,6 +12,8 @@ returning a record used by the application.
 
 The default maximum source response is 1 MiB and is configured with
 `jaroscope.response.max-source-size`.
+Raw resource reads have a separate 1 MiB default, configured with
+`jaroscope.response.max-jar-resource-size`.
 
 Background cache warming is enabled by default. Configure it with
 `jaroscope.background-decompilation.enabled`, `max-concurrent-jars`, and

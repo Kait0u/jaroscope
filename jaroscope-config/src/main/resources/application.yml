@@ -8,6 +8,7 @@ jaroscope:
     banned-roots: []
   response:
     max-source-size: 1MiB
+    max-jar-resource-size: 1MiB
   background-decompilation:
     enabled: true
     max-concurrent-jars: 2
